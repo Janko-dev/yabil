@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "value.h": "c",
+        "memory.h": "c",
+        "vm.h": "c",
+        "common.h": "c"
+    }
+}

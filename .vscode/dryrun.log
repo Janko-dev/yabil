@@ -1,0 +1,6 @@
+make.exe --dry-run --keep-going --print-directory
+make.exe: Entering directory `/c/Users/janba/C-dev/Yabil'
+gcc src/vm.c src/value.c src/debug.c src/memory.c src/chunk.c src/main.c -o vm.exe -Wall -Wextra -g 
+ 
+make.exe: Leaving directory `/c/Users/janba/C-dev/Yabil'
+ 
