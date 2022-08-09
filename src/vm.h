@@ -10,7 +10,6 @@ typedef enum {
     INTERPRET_OK,
     INTERPRET_COMPILE_ERR,
     INTERPRET_RUNTIME_ERR,
-    INTERPRET_CONTINUE,
 } InterpreterResult;
 
 typedef struct {
@@ -23,7 +22,7 @@ typedef struct {
 void init_VM(VM* vm);
 void free_VM(VM* vm);
 
-InterpreterResult interpret(VM* vm, Chunk* chunk);
+InterpreterResult interpret(VM* vm, const char* source);
 void push(VM* vm, Value val);
 Value pop(VM* vm);
 

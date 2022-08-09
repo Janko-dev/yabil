@@ -2,6 +2,7 @@
 #include "common.h"
 #include "vm.h"
 #include "debug.h"
+#include "compiler.h"
 
 static void reset_stack(VM* vm){
     vm->sp = vm->stack;
@@ -88,8 +89,7 @@ static InterpreterResult run_goto(VM* vm){
     #undef NEXT
 }
 
-InterpreterResult interpret(VM* vm, Chunk* chunk){
-    vm->chunk = chunk;
-    vm->ip = vm->chunk->code;
-    return run_goto(vm);
+InterpreterResult interpret(VM* vm, const char* source){
+    compile(vm, source);
+    return INTERPRET_OK;
 }
