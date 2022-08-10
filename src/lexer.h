@@ -25,11 +25,6 @@ typedef enum {
     TOKEN_ERROR, TOKEN_EOF, 
 } TokenType;
 
-typedef struct {
-    const char* start;
-    const char* current;
-    size_t line;
-} Lexer;
 
 typedef struct {
     TokenType type;
@@ -37,6 +32,19 @@ typedef struct {
     size_t length;
     size_t line;
 } Token;
+
+typedef struct {
+    const char* start;
+    const char* current;
+    size_t line;
+} Lexer;
+
+typedef struct {
+    Token current;
+    Token previous;
+    bool had_error;
+    bool panic_mode;
+} Parser;
 
 
 void init_lexer(Lexer* lexer, const char* source);

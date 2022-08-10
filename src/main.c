@@ -14,7 +14,7 @@ void run_REPL(VM* vm){
             printf("\n");
             break;
         }
-        interpret(line);
+        interpret(vm, line);
     }
 }
 

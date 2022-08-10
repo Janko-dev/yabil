@@ -10,7 +10,7 @@ make.exe all --print-data-base --no-builtin-variables --no-builtin-rules --quest
 make.exe: *** No rule to make target `all'.  Stop.
 
 
-# Make data base, printed on Tue Aug  9 22:13:07 2022
+# Make data base, printed on Wed Aug 10 08:25:37 2022
 
 # Variables
 
@@ -22,6 +22,7 @@ make.exe: *** No rule to make target `all'.  Stop.
 SRC = src/
 # makefile
 MAKEFLAGS = Rrqp
+ 
 # automatic
 ?D = $(patsubst %/,%,$(dir $?))
 # automatic
@@ -51,7 +52,6 @@ PATHEXT = .COM;.EXE;.BAT;.CMD;.VBS;.VBE;.JS;.JSE;.WSF;.WSH;.MSC
 # makefile (from `Makefile', line 1)
 MAKEFILE_LIST :=  Makefile
 # environment
- 
 TMP = /tmp
 # environment
 PROGRAMW6432 = C:\Program Files
@@ -82,7 +82,7 @@ ELECTRON_RUN_AS_NODE = 1
 # automatic
 %F = $(notdir $%)
 # environment
-CHROME_CRASHPAD_PIPE_NAME = \\.\pipe\crashpad_17660_RIMZEFTYTLFKJAJL
+CHROME_CRASHPAD_PIPE_NAME = \\.\pipe\crashpad_10492_GMLCNXKXMCLYNRVZ
 # environment
 COMPUTERNAME = DESKTOP-3AAR4JN
 # environment
@@ -100,7 +100,7 @@ VSCODE_AMD_ENTRYPOINT = vs/workbench/api/node/extensionHostProcess
 # environment
 VSCODE_CODE_CACHE_PATH = C:\Users\janba\AppData\Roaming\Code\CachedData\da76f93349a72022ca4670c1b84860304616aaa2
 # environment
-APPLICATION_INSIGHTS_NO_DIAGNOSTIC_CHANNEL = 1
+APPLICATION_INSIGHTS_NO_DIAGNOSTIC_CHANNEL = true
 # environment
 COMMONPROGRAMFILES = C:\Program Files (x86)\Common Files
 # environment
@@ -200,7 +200,7 @@ PROCESSOR_LEVEL = 23
 # environment
 TERM = cygwin
 # environment
-VSCODE_PID = 17660
+VSCODE_PID = 10492
 # environment
 USERDOMAIN_ROAMINGPROFILE = DESKTOP-3AAR4JN
 # variable set hash-table stats:
@@ -265,7 +265,6 @@ src/main.c:
 #  File has not been updated.
 
 # Not a target:
- 
 src/lexer.c:
 #  Implicit rule search has not been done.
 #  Modification time never checked.
@@ -318,10 +317,11 @@ src/value.c:
 # No general (`VPATH' variable) search path.
 
 # # of strings in strcache: 1
+ 
 # # of strcache buffers: 1
 # strcache size: total = 4096 / max = 4096 / min = 4096 / avg = 4096
 # strcache free: total = 4087 / max = 4087 / min = 4087 / avg = 4087
 
-# Finished Make data base on Tue Aug  9 22:13:07 2022
+# Finished Make data base on Wed Aug 10 08:25:37 2022
 
  

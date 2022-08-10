@@ -31,7 +31,7 @@ Value pop(VM* vm){
         push(vm, a op b); \
     } while (0) \
 
-static InterpreterResult run_goto(VM* vm){
+static InterpreterResult run(VM* vm){
     static void* dispatch_table[] = {
         &&op_add, &&op_sub, &&op_mul, &&op_div, &&op_negate, 
         &&op_const_long, &&op_const, &&op_return
@@ -90,6 +90,18 @@ static InterpreterResult run_goto(VM* vm){
 }
 
 InterpreterResult interpret(VM* vm, const char* source){
-    compile(vm, source);
-    return INTERPRET_OK;
+    Chunk chunk;
+    init_chunk(&chunk);
+
+    if (!compile(source, &chunk)){
+        free_chunk(&chunk);
+        return INTERPRET_COMPILE_ERR;
+    }
+
+    vm->chunk = &chunk;
+    vm->ip = chunk.code;
+
+    InterpreterResult result = run(vm);
+    free_chunk(&chunk);
+    return result;
 }
