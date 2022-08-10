@@ -10,7 +10,7 @@ make.exe all --print-data-base --no-builtin-variables --no-builtin-rules --quest
 make.exe: *** No rule to make target `all'.  Stop.
 
 
-# Make data base, printed on Wed Aug 10 08:25:37 2022
+# Make data base, printed on Wed Aug 10 15:28:24 2022
 
 # Variables
 
@@ -22,7 +22,6 @@ make.exe: *** No rule to make target `all'.  Stop.
 SRC = src/
 # makefile
 MAKEFLAGS = Rrqp
- 
 # automatic
 ?D = $(patsubst %/,%,$(dir $?))
 # automatic
@@ -35,6 +34,7 @@ HOMEDRIVE = C:
 ^D = $(patsubst %/,%,$(dir $^))
 # makefile
 CURDIR := /c/Users/janba/C-dev/Yabil
+ 
 # default
 SHELL := /bin/sh
 # makefile (from `Makefile', line 4)
@@ -58,7 +58,7 @@ PROGRAMW6432 = C:\Program Files
 # environment
 PROGRAMDATA = C:\ProgramData
 # environment
-VSCODE_CWD = C:\Users\janba\C-dev\Yabil
+VSCODE_CWD = C:\Users\janba\AppData\Local\Programs\Microsoft VS Code
 # environment
 PATH = /c/Program Files (x86)/Common Files/Intel/Shared Libraries/redist/intel64/compiler:/c/Program Files/Microsoft/jdk-11.0.12.7-hotspot/bin:/c/Program Files (x86)/Common Files/Oracle/Java/javapath:/c/WINDOWS/system32:/c/WINDOWS:/c/WINDOWS/System32/Wbem:/c/WINDOWS/System32/WindowsPowerShell/v1.0/:/c/WINDOWS/System32/OpenSSH/:/c/Program Files/NVIDIA Corporation/NVIDIA NvDLISR:/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common:/c/Program Files/Git/cmd:/c/Program Files/Docker/Docker/resources/bin:/c/ProgramData/DockerDesktop/version-bin:/c/Program Files/nodejs/:/c/Program Files/dotnet/:/mingw/bin:/usr/bin:/c/Program Files/Git LFS:/c/Users/janba/AppData/Roaming/Microsoft/Windows/Start Menu/Programs/Python 3.9:/c/Users/janba/AppData/Local/Microsoft/WindowsApps:/c/Users/janba/AppData/Local/Programs/Microsoft VS Code/bin:/usr/bin:/mingw/bin:/c/Users/janba/AppData/Roaming/npm:/c/Users/janba/.dotnet/tools:/c/Program Files (x86)/Dr. Memory/bin/
 # environment
@@ -82,7 +82,7 @@ ELECTRON_RUN_AS_NODE = 1
 # automatic
 %F = $(notdir $%)
 # environment
-CHROME_CRASHPAD_PIPE_NAME = \\.\pipe\crashpad_10492_GMLCNXKXMCLYNRVZ
+CHROME_CRASHPAD_PIPE_NAME = \\.\pipe\crashpad_18140_XAEAJDJXAVNVINHU
 # environment
 COMPUTERNAME = DESKTOP-3AAR4JN
 # environment
@@ -200,7 +200,7 @@ PROCESSOR_LEVEL = 23
 # environment
 TERM = cygwin
 # environment
-VSCODE_PID = 10492
+VSCODE_PID = 18140
 # environment
 USERDOMAIN_ROAMINGPROFILE = DESKTOP-3AAR4JN
 # variable set hash-table stats:
@@ -286,6 +286,7 @@ make: src/compiler.c src/lexer.c src/vm.c src/value.c src/debug.c src/memory.c s
 #  Implicit rule search has not been done.
 #  Modification time never checked.
 #  File has not been updated.
+ 
 #  commands to execute (from `Makefile', line 8):
 	$(CC) $(IN) -o $(OUT) $(CFLAGS)
 	
@@ -317,11 +318,10 @@ src/value.c:
 # No general (`VPATH' variable) search path.
 
 # # of strings in strcache: 1
- 
 # # of strcache buffers: 1
 # strcache size: total = 4096 / max = 4096 / min = 4096 / avg = 4096
 # strcache free: total = 4087 / max = 4087 / min = 4087 / avg = 4087
 
-# Finished Make data base on Wed Aug 10 08:25:37 2022
+# Finished Make data base on Wed Aug 10 15:28:24 2022
 
  

@@ -31,11 +31,14 @@ typedef struct {
     const char* start;
     size_t length;
     size_t line;
+    const char* err_msg;
+    size_t err_len;
 } Token;
 
 typedef struct {
     const char* start;
     const char* current;
+    const char* source;
     size_t line;
 } Lexer;
 

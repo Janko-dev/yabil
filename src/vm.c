@@ -1,8 +1,18 @@
 #include <stdio.h>
+#include <stdarg.h>
 #include "common.h"
 #include "vm.h"
 #include "debug.h"
 #include "compiler.h"
+
+static void run_time_error(VM* vm, const char* fmt, ...){
+    va_list args;
+    va_start(args, fmt);
+    vfprintf(stderr, fmt, args);
+    va_end(args);
+    size_t line = get_line(&vm->chunk->lines, (size_t)(vm->ip - vm->chunk->code - 1));
+    fprintf(stderr, "\n[line %d] in script\n", line);
+}
 
 static void reset_stack(VM* vm){
     vm->sp = vm->stack;
@@ -24,11 +34,19 @@ Value pop(VM* vm){
     return *(--vm->sp);
 }
 
-#define BINARY_OP(op) \
+Value peek(VM* vm, int dist){
+    return vm->sp[-1 - dist];
+}
+
+#define BINARY_OP(val_type, op) \
     do { \
-        double b = pop(vm); \
-        double a = pop(vm); \
-        push(vm, a op b); \
+        if (!IS_NUM(peek(vm, 0)) || !IS_NUM(peek(vm, 1))){ \
+            run_time_error(vm, "Operands must be numbers"); \
+            return INTERPRET_RUNTIME_ERR; \
+        } \
+        double b = pop(vm).as.number; \
+        double a = pop(vm).as.number; \
+        push(vm, val_type(a op b)); \
     } while (0) \
 
 static InterpreterResult run(VM* vm){
@@ -73,14 +91,18 @@ static InterpreterResult run(VM* vm){
             NEXT();
         }
         op_negate:;{
-            *(vm->sp-1) *= -1;
+            if (!IS_NUM(peek(vm, 0))){
+                run_time_error(vm, "operand must be a number");
+                return INTERPRET_RUNTIME_ERR;
+            }
+            (vm->sp-1)->as.number *= -1;
             // push(vm, -pop(vm));
             NEXT();
         }
-        op_add:; BINARY_OP(+); NEXT();
-        op_sub:; BINARY_OP(-); NEXT();
-        op_mul:; BINARY_OP(*); NEXT();
-        op_div:; BINARY_OP(/); NEXT();
+        op_add:; BINARY_OP(NUM_VAL, +); NEXT();
+        op_sub:; BINARY_OP(NUM_VAL, -); NEXT();
+        op_mul:; BINARY_OP(NUM_VAL, *); NEXT();
+        op_div:; BINARY_OP(NUM_VAL, /); NEXT();
 
     }
     #undef READ_BYTE

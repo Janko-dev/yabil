@@ -16,10 +16,17 @@ static ParseRule* get_rule(TokenType type);
 static void expression();
 static void parse_precedence(Precedence prec);
 
+static size_t get_column(Token* token){
+    size_t col;
+    for (col = 0; token->start[token->length-col-1] != '\n' && 
+                ((token->start + token->length - col-1) - lexer.source) >= 0; col++);
+    return col;
+}
+
 static void error_at(Token* token, const char* message){
     if (parser.panic_mode) return;
     parser.panic_mode = true;
-    fprintf(stderr, "[line %d] Error", token->line);
+    fprintf(stderr, "[line %d:%d] Error", token->line, get_column(token));
     if (token->type == TOKEN_EOF){
         fprintf(stderr, " at end");
     } else if (token->type == TOKEN_ERROR) {
@@ -44,7 +51,7 @@ static void advance(){
     for(;;){
         parser.current = scan_token(&lexer);
         if (parser.current.type != TOKEN_ERROR) break;
-        error_at_current(parser.current.start);
+        error_at_current(parser.current.err_msg);
     }
 }
 
@@ -98,12 +105,12 @@ static void expression(){
 }
 
 static void number(){
-    Value value = strtod(parser.previous.start, NULL);
+    double value = strtod(parser.previous.start, NULL);
     if (current_chunk()->constants.count + 1 > UINT8_MAX){
         emit_byte(OP_CONSTANT_LONG);
-        write_constant(current_chunk(), value, parser.previous.line);
+        write_constant(current_chunk(), NUM_VAL(value), parser.previous.line);
     } else {
-        emit_bytes(OP_CONSTANT, add_constant(current_chunk(), value));
+        emit_bytes(OP_CONSTANT, add_constant(current_chunk(), NUM_VAL(value)));
     }
 }
 
@@ -134,6 +141,15 @@ static void binary(){
     }
 }
 
+// TODO: implement ternary
+static void ternary(){
+    // TokenType qmark = parser.previous.type;
+    expression();
+    consume(TOKEN_COLON, "expected ':' in ternary expression");
+    expression();
+}
+
+
 ParseRule rules[] = { //      prefix     infix     precedence
     [TOKEN_LEFT_PAREN]     = {grouping,  NULL,     PREC_NONE},    
     [TOKEN_RIGHT_PAREN]    = {NULL,      NULL,     PREC_NONE},    
@@ -146,8 +162,8 @@ ParseRule rules[] = { //      prefix     infix     precedence
     [TOKEN_SEMICOLON]      = {NULL,      NULL,     PREC_NONE}, 
     [TOKEN_SLASH]          = {NULL,      binary,   PREC_FACTOR}, 
     [TOKEN_STAR]           = {NULL,      binary,   PREC_FACTOR},
-    [TOKEN_QMARK]          = {NULL,      NULL,     PREC_NONE}, 
-    [TOKEN_COLON]          = {NULL,      NULL,     PREC_NONE},
+    [TOKEN_QMARK]          = {ternary,   NULL,     PREC_TERNARY}, 
+    [TOKEN_COLON]          = {NULL,      NULL,     PREC_TERNARY},
     [TOKEN_BANG]           = {NULL,      NULL,     PREC_NONE}, 
     [TOKEN_BANG_EQUAL]     = {NULL,      NULL,     PREC_NONE}, 
     [TOKEN_EQUAL]          = {NULL,      NULL,     PREC_NONE}, 

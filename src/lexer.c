@@ -5,6 +5,7 @@
 void init_lexer(Lexer* lexer, const char* source){
     lexer->start = source;
     lexer->current = source;
+    lexer->source = source;
     lexer->line = 1;
 }
 
@@ -13,21 +14,25 @@ Token create_token(Lexer* lexer, TokenType type){
         .type = type,
         .start = lexer->start,
         .length = (size_t)(lexer->current-lexer->start),
-        .line = lexer->line
+        .line = lexer->line,
+        .err_msg = NULL,
+        .err_len = 0
     };
 }
 
 Token error_token(Lexer* lexer, const char* message){
     return (Token){
         .type = TOKEN_ERROR,
-        .start = message,
-        .length = strlen(message),
-        .line = lexer->line
+        .start = lexer->start,
+        .length = (size_t)(lexer->current-lexer->start),
+        .line = lexer->line,
+        .err_msg = message,
+        .err_len = strlen(message)
     };
 }
 
 static bool is_at_end(Lexer* lexer){
-    return *lexer->current == '\0';
+    return (*lexer->current) == '\0';
 }
 
 static char advance(Lexer* lexer){
@@ -61,13 +66,12 @@ static void skip_whitespace(Lexer* lexer){
             case '/': {
                 if (!is_at_end(lexer) && lexer->current[1] == '/'){
                     // single line comment
-                    for (; !is_at_end(lexer) || *lexer->current != '\n'; lexer->current++);
-                    advance(lexer);
+                    for (; *lexer->current != '\n' && !is_at_end(lexer); advance(lexer));
                 } else if (!is_at_end(lexer) && lexer->current[1] == '*'){
                     // multi line comment
-                    for (; (*lexer->current != '*' && lexer->current[1] != '/') || !is_at_end(lexer); lexer->current++){
-                        if (*lexer->current == '\n') lexer->line++;
-                    }
+                    advance(lexer);
+                    advance(lexer);
+                    while(!is_at_end(lexer) && *lexer->current != '*' && lexer->current[1] != '/') advance(lexer);
                     advance(lexer);
                     advance(lexer);
                 } else return;
@@ -145,9 +149,10 @@ Token create_identifier(Lexer* lexer){
 }
 
 Token scan_token(Lexer* lexer){
-    skip_whitespace(lexer);
 
+    skip_whitespace(lexer);
     lexer->start = lexer->current;
+
     if(is_at_end(lexer)) return create_token(lexer, TOKEN_EOF);
 
     char c = advance(lexer);
