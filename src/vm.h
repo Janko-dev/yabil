@@ -19,6 +19,8 @@ typedef struct {
     Value* sp;
 } VM;
 
+extern Obj* objects;
+
 void init_VM(VM* vm);
 void free_VM(VM* vm);
 

@@ -8,6 +8,8 @@
 #include "compiler.h"
 #include "memory.h"
 
+Obj* objects;
+
 static void run_time_error(VM* vm, const char* fmt, ...){
     va_list args;
     va_start(args, fmt);
@@ -23,10 +25,11 @@ static void reset_stack(VM* vm){
 
 void init_VM(VM* vm){
     reset_stack(vm);
+    objects = NULL;
 }
 
 void free_VM(VM* vm){
-    (void)vm;
+    free_objects();
 }
 
 void push(VM* vm, Value val){

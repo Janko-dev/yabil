@@ -8,13 +8,16 @@
 static Obj* alloc_obj(size_t size, ObjType type){
     Obj* object  = (Obj*)reallocate(NULL, 0, size);
     object->type = type;
+    object->next = objects;
+    objects = object;
     return object;
 }
 
 static ObjString* allocate_string(char* chars, size_t length){
-    ObjString* string = (ObjString*)alloc_obj(sizeof(ObjString), OBJ_STRING);
+    ObjString* string = (ObjString*)alloc_obj(sizeof(ObjString) + sizeof(char) * length + 1, OBJ_STRING);
     string->length = length;
-    string->chars = chars;
+    strncpy(string->chars, chars, length);
+    string->chars[length] = '\0';
     return string;
 }
 

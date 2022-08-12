@@ -10,12 +10,13 @@ typedef enum {
 
 struct Obj {
     ObjType type;
+    struct Obj* next;
 };
 
 struct ObjString {
     Obj obj;
     size_t length;
-    char* chars;
+    char chars[];
 };
 
 static inline bool is_obj_type(Value value, ObjType type){
