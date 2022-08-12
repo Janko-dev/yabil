@@ -1,6 +1,8 @@
 #include <stdio.h> 
+#include <string.h> 
 #include "value.h"
 #include "memory.h"
+#include "object.h"
 
 void init_value_array(ValueArray* val_array){
     val_array->cap = 0;
@@ -23,6 +25,28 @@ void write_value_array(ValueArray* val_array, Value value){
     val_array->values[val_array->count++] = value;
 }
 
+bool values_equal(Value a, Value b){
+    if (a.type != b.type) return false;
+    switch (a.type){
+        case VAL_BOOL:  return a.as.boolean == b.as.boolean; 
+        case VAL_NIL:   return true; 
+        case VAL_NUM:   return a.as.number == b.as.number; 
+        case VAL_OBJ: {
+            ObjString* str_a = AS_STRING(a);
+            ObjString* str_b = AS_STRING(b);
+            return str_a->length == str_b->length && 
+                   memcmp(str_a->chars, str_b->chars, str_a->length);
+        }
+        default:        return false;
+    }
+}
+
 void print_value(Value val){
-    printf("%g", val.as.number);
+    switch(val.type){
+        case VAL_NUM:  printf("%g", val.as.number); break;
+        case VAL_NIL:  printf("nil"); break;
+        case VAL_BOOL: printf(val.as.boolean ? "true" : "false"); break;
+        case VAL_OBJ:  print_obj(val); break;
+    }
+    
 }

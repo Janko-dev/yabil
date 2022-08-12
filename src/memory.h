@@ -10,6 +10,9 @@
 #define FREE_ARRAY(type, ptr, cap) \
     reallocate(ptr, sizeof(type) * (cap), 0)
 
+#define ALLOCATE(type, count) \
+    (type*)reallocate(NULL, 0, sizeof(type) * (count)) \
+
 void* reallocate(void* pointer, size_t old_size, size_t new_size);
 
 #endif //_MEMORY_H

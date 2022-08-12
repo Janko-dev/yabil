@@ -8,12 +8,14 @@
 
 void run_REPL(VM* vm){
     char line[1024];
+    printf("Welcome to the REPL of Yabil\n");
     for(;;){
         printf("> ");
         if (!fgets(line, sizeof(line), stdin)){
             printf("\n");
             break;
         }
+        // printf("<%s>\n", line);
         interpret(vm, line);
     }
 }

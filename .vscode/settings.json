@@ -12,6 +12,7 @@
         "type_traits": "c",
         "utility": "c",
         "string.h": "c",
-        "limits": "c"
+        "limits": "c",
+        "lexer.h": "c"
     }
 }
