@@ -13,6 +13,7 @@
         "utility": "c",
         "string.h": "c",
         "limits": "c",
-        "lexer.h": "c"
+        "lexer.h": "c",
+        "debug.h": "c"
     }
 }

@@ -10,7 +10,7 @@ make.exe all --print-data-base --no-builtin-variables --no-builtin-rules --quest
 make.exe: *** No rule to make target `all'.  Stop.
 
 
-# Make data base, printed on Fri Aug 12 13:56:18 2022
+# Make data base, printed on Fri Aug 12 20:21:44 2022
 
 # Variables
 
@@ -38,7 +38,7 @@ CURDIR := /c/Users/janba/C-dev/Yabil
 # default
 SHELL := /bin/sh
 # makefile (from `Makefile', line 4)
-IN = $(SRC)compiler.c $(SRC)lexer.c $(SRC)vm.c $(SRC)object.c $(SRC)value.c $(SRC)debug.c $(SRC)memory.c $(SRC)chunk.c $(SRC)main.c
+IN = $(SRC)table.c $(SRC)compiler.c $(SRC)lexer.c $(SRC)vm.c $(SRC)object.c $(SRC)value.c $(SRC)debug.c $(SRC)memory.c $(SRC)chunk.c $(SRC)main.c
 # environment
 WINDIR = C:\WINDOWS
 # environment
@@ -58,7 +58,7 @@ PROGRAMW6432 = C:\Program Files
 # environment
 PROGRAMDATA = C:\ProgramData
 # environment
-VSCODE_CWD = C:\Users\janba\AppData\Local\Programs\Microsoft VS Code
+VSCODE_CWD = C:\Users\janba\C-dev\Yabil
 # environment
 PATH = /c/Program Files (x86)/Common Files/Intel/Shared Libraries/redist/intel64/compiler:/c/Program Files/Microsoft/jdk-11.0.12.7-hotspot/bin:/c/Program Files (x86)/Common Files/Oracle/Java/javapath:/c/WINDOWS/system32:/c/WINDOWS:/c/WINDOWS/System32/Wbem:/c/WINDOWS/System32/WindowsPowerShell/v1.0/:/c/WINDOWS/System32/OpenSSH/:/c/Program Files/NVIDIA Corporation/NVIDIA NvDLISR:/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common:/c/Program Files/Git/cmd:/c/Program Files/Docker/Docker/resources/bin:/c/ProgramData/DockerDesktop/version-bin:/c/Program Files/nodejs/:/c/Program Files/dotnet/:/mingw/bin:/usr/bin:/c/Program Files/Git LFS:/c/Users/janba/AppData/Roaming/Microsoft/Windows/Start Menu/Programs/Python 3.9:/c/Users/janba/AppData/Local/Microsoft/WindowsApps:/c/Users/janba/AppData/Local/Programs/Microsoft VS Code/bin:/usr/bin:/mingw/bin:/c/Users/janba/AppData/Roaming/npm:/c/Users/janba/.dotnet/tools:/c/Program Files (x86)/Dr. Memory/bin/
 # environment
@@ -82,7 +82,7 @@ ELECTRON_RUN_AS_NODE = 1
 # automatic
 %F = $(notdir $%)
 # environment
-CHROME_CRASHPAD_PIPE_NAME = \\.\pipe\crashpad_10340_ASNTGFCFHZEONZWC
+CHROME_CRASHPAD_PIPE_NAME = \\.\pipe\crashpad_13036_CDONRPKQNFFDFWNC
 # environment
 COMPUTERNAME = DESKTOP-3AAR4JN
 # environment
@@ -98,9 +98,9 @@ PUBLIC = C:\Users\Public
 # environment
 VSCODE_AMD_ENTRYPOINT = vs/workbench/api/node/extensionHostProcess
 # environment
-VSCODE_CODE_CACHE_PATH = C:\Users\janba\AppData\Roaming\Code\CachedData\da76f93349a72022ca4670c1b84860304616aaa2
+VSCODE_CODE_CACHE_PATH = C:\Users\janba\AppData\Roaming\Code\CachedData\6d9b74a70ca9c7733b29f0456fd8195364076dda
 # environment
-APPLICATION_INSIGHTS_NO_DIAGNOSTIC_CHANNEL = 1
+APPLICATION_INSIGHTS_NO_DIAGNOSTIC_CHANNEL = true
 # environment
 COMMONPROGRAMFILES = C:\Program Files (x86)\Common Files
 # environment
@@ -146,7 +146,7 @@ PROCESSOR_IDENTIFIER = AMD64 Family 23 Model 113 Stepping 0, AuthenticAMD
 # environment
 OS = Windows_NT
 # environment
-VSCODE_IPC_HOOK = \\.\pipe\37406f71a663a7ded3962ec94234e7b6-1.70.0-main-sock
+VSCODE_IPC_HOOK = \\.\pipe\37406f71a663a7ded3962ec94234e7b6-1.70.1-main-sock
 # environment
 HOMEPATH = \
 # environment
@@ -168,6 +168,8 @@ SYSTEMROOT = C:\WINDOWS
 # environment
 APPDATA = C:\Users\janba\AppData\Roaming
 # environment
+__COMPAT_LAYER = DetectorsAppHealth
+# environment
 TEMP = /tmp
 # environment
 COMSPEC = C:\WINDOWS\system32\cmd.exe
@@ -177,7 +179,6 @@ MAKEFILES :=
 <F = $(notdir $<)
 # environment
 LC_ALL = C
- 
 # makefile (from `Makefile', line 5)
 OUT = yabil
 # automatic
@@ -201,11 +202,12 @@ PROCESSOR_LEVEL = 23
 # environment
 TERM = cygwin
 # environment
-VSCODE_PID = 10340
+VSCODE_PID = 13036
 # environment
 USERDOMAIN_ROAMINGPROFILE = DESKTOP-3AAR4JN
 # variable set hash-table stats:
-# Load=94/1024=9%, Rehash=0, Collisions=9/129=7%
+ 
+# Load=95/1024=9%, Rehash=0, Collisions=9/131=7%
 
 # Pattern-specific Variable Values
 
@@ -253,7 +255,7 @@ src/chunk.c:
 # Not a target:
 Makefile:
 #  Implicit rule search has been done.
-#  Last modified 2022-08-12 13:56:17
+#  Last modified 2022-08-12 20:12:32
 #  File has been updated.
 #  Successfully updated.
 # variable set hash-table stats:
@@ -261,6 +263,12 @@ Makefile:
 
 # Not a target:
 src/main.c:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+# Not a target:
+src/table.c:
 #  Implicit rule search has not been done.
 #  Modification time never checked.
 #  File has not been updated.
@@ -283,7 +291,7 @@ src/memory.c:
 #  Modification time never checked.
 #  File has not been updated.
 
-make: src/compiler.c src/lexer.c src/vm.c src/object.c src/value.c src/debug.c src/memory.c src/chunk.c src/main.c
+make: src/table.c src/compiler.c src/lexer.c src/vm.c src/object.c src/value.c src/debug.c src/memory.c src/chunk.c src/main.c
 #  Implicit rule search has not been done.
 #  Modification time never checked.
 #  File has not been updated.
@@ -316,7 +324,7 @@ src/value.c:
 #  File has not been updated.
 
 # files hash-table stats:
-# Load=14/1024=1%, Rehash=0, Collisions=0/34=0%
+# Load=15/1024=1%, Rehash=0, Collisions=0/36=0%
 # VPATH Search Paths
 
 # No `vpath' search paths.
@@ -328,6 +336,6 @@ src/value.c:
 # strcache size: total = 4096 / max = 4096 / min = 4096 / avg = 4096
 # strcache free: total = 4087 / max = 4087 / min = 4087 / avg = 4087
 
-# Finished Make data base on Fri Aug 12 13:56:18 2022
+# Finished Make data base on Fri Aug 12 20:21:44 2022
 
  

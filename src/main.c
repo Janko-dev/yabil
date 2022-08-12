@@ -6,7 +6,7 @@
 #include "debug.h"
 #include "vm.h"
 
-void run_REPL(VM* vm){
+void run_REPL(){
     char line[1024];
     printf("Welcome to the REPL of Yabil\n");
     for(;;){
@@ -16,7 +16,7 @@ void run_REPL(VM* vm){
             break;
         }
         // printf("<%s>\n", line);
-        interpret(vm, line);
+        interpret(line);
     }
 }
 
@@ -47,9 +47,9 @@ static char* read_file(const char* file_path){
     return source;
 }
 
-void run_file(VM* vm, const char* file_path){
+void run_file(const char* file_path){
     char* source = read_file(file_path);
-    InterpreterResult result = interpret(vm, source);
+    InterpreterResult result = interpret(source);
     free(source);
     if (result == INTERPRET_COMPILE_ERR) exit(65);
     if (result == INTERPRET_RUNTIME_ERR) exit(65);
@@ -57,16 +57,15 @@ void run_file(VM* vm, const char* file_path){
 
 int main(int argc, const char** argv){
     
-    VM vm;
-    init_VM(&vm);
+    init_VM();
 
-    if (argc == 1) run_REPL(&vm);
-    else if (argc == 2) run_file(&vm, argv[1]);
+    if (argc == 1) run_REPL();
+    else if (argc == 2) run_file(argv[1]);
     else {
         fprintf(stderr, "Usage: yabil [path]\n");
         exit(64);
     }
     
-    free_VM(&vm);
+    free_VM();
     return 0;
 }

@@ -24,7 +24,7 @@ void free_object(Obj* object){
 }
 
 void free_objects(){
-    Obj* obj = objects;
+    Obj* obj = vm.objects;
     while (obj != NULL){
         Obj* next = obj->next;
         free_object(obj);
