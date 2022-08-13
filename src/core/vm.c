@@ -1,10 +1,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
-#include "common.h"
+#include "../common/common.h"
+#include "../common/debug.h"
+#include "../common/object.h"
 #include "vm.h"
-#include "debug.h"
-#include "object.h"
 #include "compiler.h"
 #include "memory.h"
 
@@ -26,10 +26,12 @@ static void reset_stack(){
 void init_VM(){
     reset_stack();
     vm.objects = NULL;
+    init_table(&vm.globals);
     init_table(&vm.strings);
 }
 
 void free_VM(){
+    free_table(&vm.globals);
     free_table(&vm.strings);
     free_objects();
 }
@@ -132,10 +134,6 @@ static InterpreterResult run(){
             DISPATCH();
 
         op_return:;{
-            if ((int)(vm.sp - vm.stack) > 0){
-                print_value(pop(vm));
-                printf("\n");
-            }
             return INTERPRET_OK;
         }
         op_const:;{
@@ -186,7 +184,42 @@ static InterpreterResult run(){
         op_less_equal:;     BINARY_OP(BOOL_VAL, <=); NEXT();
         op_greater:;        BINARY_OP(BOOL_VAL, >); NEXT();
         op_greater_equal:;  BINARY_OP(BOOL_VAL, >=); NEXT();
-        
+        op_print:; {
+            print_value(pop());
+            printf("\n");
+        } NEXT();
+        op_pop:; pop(); NEXT();
+        op_define_global:; {
+            ObjString* name = AS_STRING(READ_CONSTANT(READ_BYTE()));
+            table_set(&vm.globals, name, peek(0));
+            pop();
+        } NEXT();
+        op_define_global_long:; {
+            size_t const_index = vm.ip[0] | vm.ip[1] << 8 | vm.ip[2] << 16;
+            ObjString* name = AS_STRING(READ_CONSTANT(const_index));
+            table_set(&vm.globals, name, peek(0));
+            pop();
+            vm.ip+=3;
+        } NEXT();
+        op_get_global:;{
+            ObjString* name = AS_STRING(READ_CONSTANT(READ_BYTE()));
+            Value value;
+            if (!table_get(&vm.globals, name, &value)){
+                run_time_error("Undefined variable '%s'", name->chars);
+            }
+            push(value);
+        } NEXT();
+        op_get_global_long:;{
+            size_t const_index = vm.ip[0] | vm.ip[1] << 8 | vm.ip[2] << 16;
+            ObjString* name = AS_STRING(READ_CONSTANT(const_index));
+            Value value;
+            if (!table_get(&vm.globals, name, &value)){
+                run_time_error("Undefined variable '%s'", name->chars);
+                return INTERPRET_RUNTIME_ERR;
+            }
+            push(value);
+            vm.ip+=3;
+        } NEXT();
     }
     #undef READ_BYTE
     #undef DISPATCH
@@ -206,8 +239,12 @@ InterpreterResult interpret(const char* source){
     vm.chunk = &chunk;
     vm.ip = chunk.code;
     
-
     InterpreterResult result = run();
+    // printf("=== hashtable ===\n");
+    // for (size_t i = 0; i < vm.strings.cap; i++){
+    //     if (vm.strings.entries[i].key) printf("%s\n", vm.strings.entries[i].key->chars);
+    //     else printf("(null)\n");
+    // }
     free_chunk(&chunk);
     return result;
 }

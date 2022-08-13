@@ -10,7 +10,7 @@ make.exe all --print-data-base --no-builtin-variables --no-builtin-rules --quest
 make.exe: *** No rule to make target `all'.  Stop.
 
 
-# Make data base, printed on Fri Aug 12 20:21:44 2022
+# Make data base, printed on Sat Aug 13 09:01:46 2022
 
 # Variables
 
@@ -18,8 +18,8 @@ make.exe: *** No rule to make target `all'.  Stop.
 <D = $(patsubst %/,%,$(dir $<))
 # automatic
 ?F = $(notdir $?)
- 
 # makefile (from `Makefile', line 3)
+ 
 SRC = src/
 # makefile
 MAKEFLAGS = Rrqp
@@ -37,8 +37,8 @@ HOMEDRIVE = C:
 CURDIR := /c/Users/janba/C-dev/Yabil
 # default
 SHELL := /bin/sh
-# makefile (from `Makefile', line 4)
-IN = $(SRC)table.c $(SRC)compiler.c $(SRC)lexer.c $(SRC)vm.c $(SRC)object.c $(SRC)value.c $(SRC)debug.c $(SRC)memory.c $(SRC)chunk.c $(SRC)main.c
+# makefile (from `Makefile', line 5)
+COMMON = $(SRC)common/
 # environment
 WINDIR = C:\WINDOWS
 # environment
@@ -58,7 +58,7 @@ PROGRAMW6432 = C:\Program Files
 # environment
 PROGRAMDATA = C:\ProgramData
 # environment
-VSCODE_CWD = C:\Users\janba\C-dev\Yabil
+VSCODE_CWD = C:\Users\janba\AppData\Local\Programs\Microsoft VS Code
 # environment
 PATH = /c/Program Files (x86)/Common Files/Intel/Shared Libraries/redist/intel64/compiler:/c/Program Files/Microsoft/jdk-11.0.12.7-hotspot/bin:/c/Program Files (x86)/Common Files/Oracle/Java/javapath:/c/WINDOWS/system32:/c/WINDOWS:/c/WINDOWS/System32/Wbem:/c/WINDOWS/System32/WindowsPowerShell/v1.0/:/c/WINDOWS/System32/OpenSSH/:/c/Program Files/NVIDIA Corporation/NVIDIA NvDLISR:/c/Program Files (x86)/NVIDIA Corporation/PhysX/Common:/c/Program Files/Git/cmd:/c/Program Files/Docker/Docker/resources/bin:/c/ProgramData/DockerDesktop/version-bin:/c/Program Files/nodejs/:/c/Program Files/dotnet/:/mingw/bin:/usr/bin:/c/Program Files/Git LFS:/c/Users/janba/AppData/Roaming/Microsoft/Windows/Start Menu/Programs/Python 3.9:/c/Users/janba/AppData/Local/Microsoft/WindowsApps:/c/Users/janba/AppData/Local/Programs/Microsoft VS Code/bin:/usr/bin:/mingw/bin:/c/Users/janba/AppData/Roaming/npm:/c/Users/janba/.dotnet/tools:/c/Program Files (x86)/Dr. Memory/bin/
 # environment
@@ -73,16 +73,20 @@ USERPROFILE = C:\Users\janba
 !C: = c:\Users\janba\C-dev\Yabil
 # environment
 ALLUSERSPROFILE = C:\ProgramData
+# makefile (from `Makefile', line 8)
+INPUT_COMMON = $(COMMON)table.c $(COMMON)object.c $(COMMON)value.c $(COMMON)debug.c
 # environment
 NUMBER_OF_PROCESSORS = 16
 # environment
 ELECTRON_RUN_AS_NODE = 1
 # default
 .FEATURES := target-specific order-only second-expansion else-if archives jobserver check-symlink
+# makefile (from `Makefile', line 9)
+IN = $(INPUT_COMMON) $(INPUT_CORE) $(SRC)main.c
 # automatic
 %F = $(notdir $%)
 # environment
-CHROME_CRASHPAD_PIPE_NAME = \\.\pipe\crashpad_13036_CDONRPKQNFFDFWNC
+CHROME_CRASHPAD_PIPE_NAME = \\.\pipe\crashpad_6804_WDSNRBMJWSSAIPVR
 # environment
 COMPUTERNAME = DESKTOP-3AAR4JN
 # environment
@@ -100,7 +104,7 @@ VSCODE_AMD_ENTRYPOINT = vs/workbench/api/node/extensionHostProcess
 # environment
 VSCODE_CODE_CACHE_PATH = C:\Users\janba\AppData\Roaming\Code\CachedData\6d9b74a70ca9c7733b29f0456fd8195364076dda
 # environment
-APPLICATION_INSIGHTS_NO_DIAGNOSTIC_CHANNEL = true
+APPLICATION_INSIGHTS_NO_DIAGNOSTIC_CHANNEL = 1
 # environment
 COMMONPROGRAMFILES = C:\Program Files (x86)\Common Files
 # environment
@@ -119,6 +123,8 @@ MIC_LD_LIBRARY_PATH = C:\Program Files (x86)\Common Files\Intel\Shared Libraries
 MAKE = $(MAKE_COMMAND)
 # default
 MAKECMDGOALS := all
+# makefile (from `Makefile', line 7)
+INPUT_CORE = $(CORE)compiler.c $(CORE)lexer.c $(CORE)vm.c $(CORE)memory.c $(CORE)chunk.c
 # makefile (from `Makefile', line 1)
 CC = gcc
 # default
@@ -168,8 +174,6 @@ SYSTEMROOT = C:\WINDOWS
 # environment
 APPDATA = C:\Users\janba\AppData\Roaming
 # environment
-__COMPAT_LAYER = DetectorsAppHealth
-# environment
 TEMP = /tmp
 # environment
 COMSPEC = C:\WINDOWS\system32\cmd.exe
@@ -179,7 +183,7 @@ MAKEFILES :=
 <F = $(notdir $<)
 # environment
 LC_ALL = C
-# makefile (from `Makefile', line 5)
+# makefile (from `Makefile', line 10)
 OUT = yabil
 # automatic
 ^F = $(notdir $^)
@@ -193,21 +197,23 @@ SESSIONNAME = Console
 PROCESSOR_REVISION = 7100
 # default
 .INCLUDE_DIRS = /usr/include /usr/include
+# makefile (from `Makefile', line 4)
+CORE = $(SRC)core/
 # environment
 MAKELEVEL := 0
 # environment
+ 
 LANG = C
 # environment
 PROCESSOR_LEVEL = 23
 # environment
 TERM = cygwin
 # environment
-VSCODE_PID = 13036
+VSCODE_PID = 6804
 # environment
 USERDOMAIN_ROAMINGPROFILE = DESKTOP-3AAR4JN
 # variable set hash-table stats:
- 
-# Load=95/1024=9%, Rehash=0, Collisions=9/131=7%
+# Load=98/1024=10%, Rehash=0, Collisions=15/145=10%
 
 # Pattern-specific Variable Values
 
@@ -226,7 +232,13 @@ USERDOMAIN_ROAMINGPROFILE = DESKTOP-3AAR4JN
 # Files
 
 # Not a target:
-src/compiler.c:
+src/core/vm.c:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+# Not a target:
+src/common/debug.c:
 #  Implicit rule search has not been done.
 #  Modification time never checked.
 #  File has not been updated.
@@ -241,7 +253,7 @@ all:
 # Load=0/32=0%, Rehash=0, Collisions=0/0=0%
 
 # Not a target:
-src/chunk.c:
+src/common/object.c:
 #  Implicit rule search has not been done.
 #  Modification time never checked.
 #  File has not been updated.
@@ -255,11 +267,23 @@ src/chunk.c:
 # Not a target:
 Makefile:
 #  Implicit rule search has been done.
-#  Last modified 2022-08-12 20:12:32
+#  Last modified 2022-08-13 09:01:39
 #  File has been updated.
 #  Successfully updated.
 # variable set hash-table stats:
 # Load=0/32=0%, Rehash=0, Collisions=0/0=0%
+
+# Not a target:
+src/common/value.c:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+# Not a target:
+src/core/compiler.c:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
 
 # Not a target:
 src/main.c:
@@ -268,13 +292,7 @@ src/main.c:
 #  File has not been updated.
 
 # Not a target:
-src/table.c:
-#  Implicit rule search has not been done.
-#  Modification time never checked.
-#  File has not been updated.
-
-# Not a target:
-src/lexer.c:
+src/core/chunk.c:
 #  Implicit rule search has not been done.
 #  Modification time never checked.
 #  File has not been updated.
@@ -285,40 +303,28 @@ src/lexer.c:
 #  Modification time never checked.
 #  File has not been updated.
 
-# Not a target:
-src/memory.c:
+make: src/common/table.c src/common/object.c src/common/value.c src/common/debug.c src/core/compiler.c src/core/lexer.c src/core/vm.c src/core/memory.c src/core/chunk.c src/main.c
 #  Implicit rule search has not been done.
 #  Modification time never checked.
 #  File has not been updated.
-
-make: src/table.c src/compiler.c src/lexer.c src/vm.c src/object.c src/value.c src/debug.c src/memory.c src/chunk.c src/main.c
-#  Implicit rule search has not been done.
-#  Modification time never checked.
-#  File has not been updated.
-#  commands to execute (from `Makefile', line 8):
+#  commands to execute (from `Makefile', line 13):
 	$(CC) $(IN) -o $(OUT) $(CFLAGS)
 	
 
 # Not a target:
-src/vm.c:
+src/common/table.c:
 #  Implicit rule search has not been done.
 #  Modification time never checked.
 #  File has not been updated.
 
 # Not a target:
-src/debug.c:
+src/core/lexer.c:
 #  Implicit rule search has not been done.
 #  Modification time never checked.
 #  File has not been updated.
 
 # Not a target:
-src/object.c:
-#  Implicit rule search has not been done.
-#  Modification time never checked.
-#  File has not been updated.
-
-# Not a target:
-src/value.c:
+src/core/memory.c:
 #  Implicit rule search has not been done.
 #  Modification time never checked.
 #  File has not been updated.
@@ -336,6 +342,6 @@ src/value.c:
 # strcache size: total = 4096 / max = 4096 / min = 4096 / avg = 4096
 # strcache free: total = 4087 / max = 4087 / min = 4087 / avg = 4087
 
-# Finished Make data base on Fri Aug 12 20:21:44 2022
+# Finished Make data base on Sat Aug 13 09:01:46 2022
 
  

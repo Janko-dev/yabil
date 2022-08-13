@@ -2,7 +2,6 @@
 #include "chunk.h"
 #include "memory.h"
 
-
 void init_lines(LineArray* lines){
     lines->cap = 0;
     lines->count = 0;

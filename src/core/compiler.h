@@ -1,8 +1,8 @@
 #ifndef _COMPILER_H
 #define _COMPILER_H
 
+#include "../common/common.h"
 #include "vm.h"
-#include "common.h"
 
 typedef enum {
     PREC_NONE,

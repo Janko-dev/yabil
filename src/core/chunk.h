@@ -1,8 +1,8 @@
 #ifndef _CHUNK_H
 #define _CHUNK_H
 
-#include "common.h"
-#include "value.h"
+#include "../common/common.h"
+#include "../common/value.h"
 
 typedef enum {
     OP_ADD,
@@ -22,6 +22,12 @@ typedef enum {
     OP_LESS_EQUAL,
     OP_GREATER,
     OP_GREATER_EQUAL,
+    OP_PRINT,
+    OP_POP,
+    OP_DEFINE_GLOBAL,
+    OP_DEFINE_GLOBAL_LONG,
+    OP_GET_GLOBAL,
+    OP_GET_GLOBAL_LONG,
     OP_RETURN,
 } OpCode;
 

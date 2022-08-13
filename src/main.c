@@ -1,10 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "common.h"
-#include "chunk.h"
-#include "debug.h"
-#include "vm.h"
+#include "common/common.h"
+#include "common/debug.h"
+#include "core/chunk.h"
+#include "core/vm.h"
 
 void run_REPL(){
     char line[1024];

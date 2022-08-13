@@ -1,10 +1,10 @@
 #include <string.h>
 #include <stdio.h>
-#include "memory.h"
+#include "../core/memory.h"
+#include "../core/vm.h"
 #include "object.h"
 #include "value.h"
 #include "table.h"
-#include "vm.h"
 
 // hashing algorithm: FNV-1a
 static uint32_t hash_string(const char* key, size_t length){

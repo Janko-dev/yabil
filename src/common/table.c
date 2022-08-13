@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "memory.h"
+#include "../core/memory.h"
 #include "object.h"
 #include "table.h"
 #include "value.h"
