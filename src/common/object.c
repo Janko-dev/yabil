@@ -54,8 +54,22 @@ ObjString* take_string(char* chars, size_t length){
     return allocate_string(chars, length, hash);
 }
 
+ObjArray* take_array(){
+    ObjArray* array = (ObjArray*)alloc_obj(sizeof(ObjArray), OBJ_ARRAY);
+    init_value_array(&array->elements);
+    return array;
+}
+
 void print_obj(Value value){
     switch (OBJ_TYPE(value)){
         case OBJ_STRING: printf("%s", AS_CSTRING(value)); break;
+        case OBJ_ARRAY: {
+            printf("[ ");
+            for (size_t i = 0; i < AS_ARRAY(value)->elements.count; i++){
+                print_value(AS_ARRAY(value)->elements.values[i]);
+                if (i != AS_ARRAY(value)->elements.count - 1) printf(", ");
+            }
+            printf(" ]");
+        } break;
     }
 }

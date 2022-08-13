@@ -165,6 +165,8 @@ Token scan_token(Lexer* lexer){
         case ')': return create_token(lexer, TOKEN_RIGHT_PAREN);
         case '{': return create_token(lexer, TOKEN_LEFT_BRACE);
         case '}': return create_token(lexer, TOKEN_RIGHT_BRACE);
+        case '[': return create_token(lexer, TOKEN_LEFT_BRACKET);
+        case ']': return create_token(lexer, TOKEN_RIGHT_BRACKET);
         case ';': return create_token(lexer, TOKEN_SEMICOLON);
         case ',': return create_token(lexer, TOKEN_COMMA);
         case '.': return create_token(lexer, TOKEN_DOT);

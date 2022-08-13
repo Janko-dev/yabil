@@ -76,13 +76,38 @@ static void concatenate(Value a, Value b){
         concat_string(AS_CSTRING(a), AS_STRING(a)->length, AS_CSTRING(b), AS_STRING(b)->length);
         return;
     }
-    if (!IS_STRING(a)){
+
+    if (IS_ARRAY(a) && IS_ARRAY(b)){
+        for (size_t i = 0; i < AS_ARRAY(b)->elements.count; i++){
+            write_value_array(&AS_ARRAY(a)->elements, AS_ARRAY(b)->elements.values[i]);
+        }
+        push(a);
+        return;
+    }
+
+    if (!IS_ARRAY(a) && IS_ARRAY(b)){
+        write_value_array(&AS_ARRAY(b)->elements, NIL_VAL);
+        for (size_t i = AS_ARRAY(b)->elements.count - 1; i > 0; i--){
+            AS_ARRAY(b)->elements.values[i] = AS_ARRAY(b)->elements.values[i-1];
+        }
+        AS_ARRAY(b)->elements.values[0] = a;
+        push(b);
+        return;
+    }
+
+    if (IS_ARRAY(a) && !IS_ARRAY(b)){
+        write_value_array(&AS_ARRAY(a)->elements, b);
+        push(a);
+        return;
+    }
+
+    if (!IS_STRING(a) && IS_STRING(b)){
         char str_a[100];
         to_string(str_a, 100, a);
         concat_string(str_a, strlen(str_a), AS_CSTRING(b), AS_STRING(b)->length);
         return;
     }
-    if (!IS_STRING(b)){
+    if (!IS_STRING(b) && IS_STRING(a)){
         char str_b[100];
         to_string(str_b, 100, b);
         concat_string(AS_CSTRING(a), AS_STRING(a)->length, str_b, strlen(str_b));
@@ -164,8 +189,9 @@ static InterpreterResult run(){
             Value a = pop();
             if (IS_NUM(a) && IS_NUM(b)) push(NUM_VAL(a.as.number + b.as.number));
             else if (IS_STRING(a) || IS_STRING(b)) concatenate(a, b);
+            else if (IS_ARRAY(a) || IS_ARRAY(b)) concatenate(a, b);
             else {
-                run_time_error("Unreachable add operation");
+                run_time_error("undefined add operation");
                 return INTERPRET_RUNTIME_ERR;
             }
         } NEXT();
@@ -218,6 +244,43 @@ static InterpreterResult run(){
                 return INTERPRET_RUNTIME_ERR;
             }
             push(value);
+            vm.ip+=3;
+        } NEXT();
+        op_set_global:;{
+            ObjString* name = AS_STRING(READ_CONSTANT(READ_BYTE()));
+            if (table_set(&vm.globals, name, peek(0))){ // is_new_key in hash, so undefined variable
+                table_delete(&vm.globals, name);
+                run_time_error("Undefined variable '%s'", name->chars);
+                return INTERPRET_RUNTIME_ERR;
+            }
+        } NEXT();
+        op_set_global_long:;{
+            size_t const_index = vm.ip[0] | vm.ip[1] << 8 | vm.ip[2] << 16;
+            ObjString* name = AS_STRING(READ_CONSTANT(const_index));
+            if (table_set(&vm.globals, name, peek(0))){ // is_new_key in hash, so undefined variable
+                table_delete(&vm.globals, name);
+                run_time_error("Undefined variable '%s'", name->chars);
+                return INTERPRET_RUNTIME_ERR;
+            }
+            vm.ip+=3;
+        } NEXT();
+        op_array:; {
+            size_t count = READ_BYTE();
+            ObjArray* arr = take_array(); 
+            for (size_t i = 0; i < count; i++){
+                write_value_array(&arr->elements, peek(count-i-1));
+            }
+            for (size_t i = 0; i < count; i++) pop();
+            push(OBJ_VAL(arr));
+        } NEXT();
+        op_array_long:; {
+            size_t count = vm.ip[0] | vm.ip[1] << 8 | vm.ip[2] << 16;
+            ObjArray* arr = take_array(); 
+            for (size_t i = 0; i < count; i++){
+                write_value_array(&arr->elements, peek(count-i-1));
+            }
+            for (size_t i = 0; i < count; i++) pop();
+            push(OBJ_VAL(arr));
             vm.ip+=3;
         } NEXT();
     }

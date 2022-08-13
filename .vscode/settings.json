@@ -17,6 +17,5 @@
         "debug.h": "c",
         "chunk.h": "c",
         "object.h": "c"
-    },
-    "C_Cpp.errorSquiggles": "Disabled"
+    }
 }

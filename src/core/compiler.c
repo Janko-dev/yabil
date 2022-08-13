@@ -125,11 +125,16 @@ static void parse_precedence(Precedence prec){
         error("Expected an expression");
         return;
     }
-    prefix_rule();
+    bool can_assign = prec <= PREC_ASSIGNMENT;
+    prefix_rule(can_assign);
 
     while(prec <= get_rule(parser.current.type)->precedence){
         advance();
-        get_rule(parser.previous.type)->infix();
+        get_rule(parser.previous.type)->infix(can_assign);
+    }
+
+    if (can_assign && match(TOKEN_EQUAL)){
+        error("Invalid assignment target");
     }
 }
 
@@ -185,7 +190,8 @@ static void expression(){
     parse_precedence(PREC_ASSIGNMENT);
 }
 
-static void number(){
+static void number(bool can_assign){
+    UNUSED(can_assign);
     double value = strtod(parser.previous.start, NULL);
     if (current_chunk()->constants.count + 1 > UINT8_MAX){
         emit_byte(OP_CONSTANT_LONG);
@@ -195,7 +201,8 @@ static void number(){
     }
 }
 
-static void literal(){
+static void literal(bool can_assign){
+    UNUSED(can_assign);
     switch(parser.previous.type){
         case TOKEN_NIL:   emit_byte(OP_NIL); break;
         case TOKEN_TRUE:  emit_byte(OP_TRUE); break;
@@ -204,7 +211,8 @@ static void literal(){
     }
 }
 
-static void string(){
+static void string(bool can_assign){
+    UNUSED(can_assign);
     Value value = OBJ_VAL(copy_string(parser.previous.start+1, parser.previous.length-2));
     if (current_chunk()->constants.count + 1 > UINT8_MAX){
         emit_byte(OP_CONSTANT_LONG);
@@ -214,22 +222,58 @@ static void string(){
     }
 }
 
-static void variable(){
+static void variable(bool can_assign){
     Value value = OBJ_VAL(copy_string(parser.previous.start, parser.previous.length));
-    if (current_chunk()->constants.count + 1 > UINT8_MAX){
-        emit_byte(OP_GET_GLOBAL_LONG);
-        write_constant(current_chunk(), value, parser.previous.line);
+    
+    if (can_assign && match(TOKEN_EQUAL)){
+        expression();
+        if (current_chunk()->constants.count + 1 > UINT8_MAX){
+            emit_byte(OP_SET_GLOBAL_LONG);
+            write_constant(current_chunk(), value, parser.previous.line);
+        } else {
+            emit_bytes(OP_SET_GLOBAL, add_constant(current_chunk(), value));
+        }
     } else {
-        emit_bytes(OP_GET_GLOBAL, add_constant(current_chunk(), value));
+        if (current_chunk()->constants.count + 1 > UINT8_MAX){
+            emit_byte(OP_GET_GLOBAL_LONG);
+            write_constant(current_chunk(), value, parser.previous.line);
+        } else {
+            emit_bytes(OP_GET_GLOBAL, add_constant(current_chunk(), value));
+        }
     }
+
 }
 
-static void grouping(){
+static void grouping(bool can_assign){
+    UNUSED(can_assign);
     expression();
     consume(TOKEN_RIGHT_PAREN, "Expected ')' after expression");
 }
 
-static void unary(){
+static void array(bool can_assign){
+    UNUSED(can_assign);
+    size_t count = 0;
+    if (!match(TOKEN_RIGHT_BRACKET)){
+        expression();
+        count++;
+        while(!match(TOKEN_RIGHT_BRACKET)){
+            consume(TOKEN_COMMA, "Expected ',' in list");
+            if (match(TOKEN_RIGHT_BRACKET)) break;
+            expression();
+            count++;
+        }
+    }
+
+    if (count > UINT8_MAX){
+        emit_bytes(OP_ARRAY_LONG, count);
+        emit_bytes(count >> 8, count >> 16);
+    } else {
+        emit_bytes(OP_ARRAY, count);
+    }
+}
+
+static void unary(bool can_assign){
+    UNUSED(can_assign);
     TokenType operator = parser.previous.type;
     parse_precedence(PREC_UNARY);
     switch(operator){
@@ -239,7 +283,8 @@ static void unary(){
     }
 }
 
-static void binary(){
+static void binary(bool can_assign){
+    UNUSED(can_assign);
     TokenType operator = parser.previous.type;
     ParseRule* rule = get_rule(operator);
     parse_precedence((Precedence)(rule->precedence+1));
@@ -260,7 +305,8 @@ static void binary(){
 }
 
 // TODO: implement ternary
-static void ternary(){
+static void ternary(bool can_assign){
+    UNUSED(can_assign);
     // TokenType qmark = parser.previous.type;
     expression();
     consume(TOKEN_COLON, "expected ':' in ternary expression");
@@ -273,6 +319,8 @@ ParseRule rules[] = { //      prefix     infix     precedence
     [TOKEN_RIGHT_PAREN]    = {NULL,      NULL,     PREC_NONE},    
     [TOKEN_LEFT_BRACE]     = {NULL,      NULL,     PREC_NONE}, 
     [TOKEN_RIGHT_BRACE]    = {NULL,      NULL,     PREC_NONE},
+    [TOKEN_LEFT_BRACKET]   = {array,     NULL,     PREC_NONE}, 
+    [TOKEN_RIGHT_BRACKET]  = {NULL,      NULL,     PREC_NONE},
     [TOKEN_COMMA]          = {NULL,      NULL,     PREC_NONE}, 
     [TOKEN_DOT]            = {NULL,      NULL,     PREC_NONE}, 
     [TOKEN_MINUS]          = {unary,     binary,   PREC_TERM}, 

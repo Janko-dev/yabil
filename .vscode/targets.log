@@ -10,7 +10,7 @@ make.exe all --print-data-base --no-builtin-variables --no-builtin-rules --quest
 make.exe: *** No rule to make target `all'.  Stop.
 
 
-# Make data base, printed on Sat Aug 13 09:01:46 2022
+# Make data base, printed on Sat Aug 13 12:29:52 2022
 
 # Variables
 
@@ -86,7 +86,7 @@ IN = $(INPUT_COMMON) $(INPUT_CORE) $(SRC)main.c
 # automatic
 %F = $(notdir $%)
 # environment
-CHROME_CRASHPAD_PIPE_NAME = \\.\pipe\crashpad_6804_WDSNRBMJWSSAIPVR
+CHROME_CRASHPAD_PIPE_NAME = \\.\pipe\crashpad_1988_EDQBFFHICBDJBYRD
 # environment
 COMPUTERNAME = DESKTOP-3AAR4JN
 # environment
@@ -104,7 +104,7 @@ VSCODE_AMD_ENTRYPOINT = vs/workbench/api/node/extensionHostProcess
 # environment
 VSCODE_CODE_CACHE_PATH = C:\Users\janba\AppData\Roaming\Code\CachedData\6d9b74a70ca9c7733b29f0456fd8195364076dda
 # environment
-APPLICATION_INSIGHTS_NO_DIAGNOSTIC_CHANNEL = 1
+APPLICATION_INSIGHTS_NO_DIAGNOSTIC_CHANNEL = true
 # environment
 COMMONPROGRAMFILES = C:\Program Files (x86)\Common Files
 # environment
@@ -202,14 +202,13 @@ CORE = $(SRC)core/
 # environment
 MAKELEVEL := 0
 # environment
- 
 LANG = C
 # environment
 PROCESSOR_LEVEL = 23
 # environment
 TERM = cygwin
 # environment
-VSCODE_PID = 6804
+VSCODE_PID = 1988
 # environment
 USERDOMAIN_ROAMINGPROFILE = DESKTOP-3AAR4JN
 # variable set hash-table stats:
@@ -221,9 +220,9 @@ USERDOMAIN_ROAMINGPROFILE = DESKTOP-3AAR4JN
 
 # Directories
 
-# . (device -13143, inode 3482198): 10 files, no impossibilities.
+# . (device -13143, inode 3482198): 11 files, no impossibilities.
 
-# 10 files, no impossibilities in 1 directories.
+# 11 files, no impossibilities in 1 directories.
 
 # Implicit Rules
 
@@ -231,6 +230,7 @@ USERDOMAIN_ROAMINGPROFILE = DESKTOP-3AAR4JN
 
 # Files
 
+ 
 # Not a target:
 src/core/vm.c:
 #  Implicit rule search has not been done.
@@ -342,6 +342,6 @@ src/core/memory.c:
 # strcache size: total = 4096 / max = 4096 / min = 4096 / avg = 4096
 # strcache free: total = 4087 / max = 4087 / min = 4087 / avg = 4087
 
-# Finished Make data base on Sat Aug 13 09:01:46 2022
+# Finished Make data base on Sat Aug 13 12:29:52 2022
 
  

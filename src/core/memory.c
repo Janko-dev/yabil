@@ -17,6 +17,10 @@ void free_object(Obj* object){
     switch (object->type){
         case OBJ_STRING: {
             FREE(ObjString, object);
+        } break;
+        case OBJ_ARRAY: {
+            free_value_array(&((ObjArray*)object)->elements);
+            FREE(ObjArray, object);
         }
     }
 }

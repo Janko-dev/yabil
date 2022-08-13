@@ -67,6 +67,10 @@ size_t disassemble_instruction(Chunk* chunk, size_t offset){
         case OP_DEFINE_GLOBAL_LONG:         return constant_long_instruction("OP_DEFINE_GLOBAL_LONG", chunk, offset); 
         case OP_GET_GLOBAL:                 return constant_instruction("OP_GET_GLOBAL", chunk, offset); 
         case OP_GET_GLOBAL_LONG:            return constant_long_instruction("OP_GET_GLOBAL_LONG", chunk, offset);     
+        case OP_SET_GLOBAL:                 return constant_instruction("OP_SET_GLOBAL", chunk, offset); 
+        case OP_SET_GLOBAL_LONG:            return constant_long_instruction("OP_SET_GLOBAL_LONG", chunk, offset);
+        case OP_ARRAY:                      return constant_instruction("OP_ARRAY", chunk, offset); 
+        case OP_ARRAY_LONG:                 return constant_long_instruction("OP_ARRAY_LONG", chunk, offset);
         default:
             printf("Unknown opcode %d\n", ins);
             return offset+1;

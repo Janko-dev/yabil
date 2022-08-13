@@ -8,4 +8,6 @@
 #define DEBUG_PRINT_CODE
 #define DEBUG_TRACE_EXECUTION
 
+#define UNUSED(val) (void)val
+
 #endif //_COMMON_H
