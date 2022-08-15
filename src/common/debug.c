@@ -32,6 +32,14 @@ static size_t constant_long_instruction(const char* name, Chunk* chunk, size_t o
     return offset+4;
 }
 
+static size_t long_instruction(const char* name, Chunk* chunk, size_t offset){
+    size_t const_index = chunk->code[offset+1] |
+                         chunk->code[offset+2] << 8 |
+                         chunk->code[offset+3] << 16;
+    printf("%-16s %4d\n", name, const_index);
+    return offset+4;
+}
+
 size_t disassemble_instruction(Chunk* chunk, size_t offset){
     printf("%04d ", offset);
     size_t line_num = get_line(&chunk->lines, offset);
@@ -63,14 +71,18 @@ size_t disassemble_instruction(Chunk* chunk, size_t offset){
          
         case OP_PRINT:                      return simple_instruction("OP_PRINT", offset);
         case OP_POP:                        return simple_instruction("OP_POP", offset); 
+        case OP_POPN:                       return long_instruction("OP_POPN", chunk, offset);
         case OP_DEFINE_GLOBAL:              return constant_instruction("OP_DEFINE_GLOBAL", chunk, offset); 
-        case OP_DEFINE_GLOBAL_LONG:         return constant_long_instruction("OP_DEFINE_GLOBAL_LONG", chunk, offset); 
+        case OP_DEFINE_GLOBAL_LONG:         return long_instruction("OP_DEFINE_GLOBAL_LONG", chunk, offset); 
         case OP_GET_GLOBAL:                 return constant_instruction("OP_GET_GLOBAL", chunk, offset); 
-        case OP_GET_GLOBAL_LONG:            return constant_long_instruction("OP_GET_GLOBAL_LONG", chunk, offset);     
+        case OP_GET_GLOBAL_LONG:            return long_instruction("OP_GET_GLOBAL_LONG", chunk, offset);     
         case OP_SET_GLOBAL:                 return constant_instruction("OP_SET_GLOBAL", chunk, offset); 
-        case OP_SET_GLOBAL_LONG:            return constant_long_instruction("OP_SET_GLOBAL_LONG", chunk, offset);
+        case OP_SET_GLOBAL_LONG:            return long_instruction("OP_SET_GLOBAL_LONG", chunk, offset);
+        case OP_GET_LOCAL:                  return long_instruction("OP_GET_LOCAL", chunk, offset); 
+        case OP_SET_LOCAL:                  return long_instruction("OP_SET_LOCAL", chunk, offset);
         case OP_ARRAY:                      return constant_instruction("OP_ARRAY", chunk, offset); 
-        case OP_ARRAY_LONG:                 return constant_long_instruction("OP_ARRAY_LONG", chunk, offset);
+        case OP_ARRAY_LONG:                 return long_instruction("OP_ARRAY_LONG", chunk, offset);
+        case OP_GET_INDEX:                  return simple_instruction("OP_GET_INDEX", offset);
         default:
             printf("Unknown opcode %d\n", ins);
             return offset+1;

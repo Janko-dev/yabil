@@ -1,6 +1,5 @@
-make.exe --dry-run --always-make --keep-going --print-directory
+make.exe --dry-run --keep-going --print-directory
 make.exe: Entering directory `/c/Users/janba/C-dev/Yabil'
-gcc src/common/table.c src/common/object.c src/common/value.c src/common/debug.c src/core/compiler.c src/core/lexer.c src/core/vm.c src/core/memory.c src/core/chunk.c src/main.c -o yabil -Wall -Wextra -g 
- 
+gcc src/common/table.c src/common/object.c src/common/value.c src/common/debug.c src/core/compiler.c src/core/lexer.c src/core/vm.c src/core/memory.c src/core/chunk.c src/main.c -o yabil -Wall -Wextra -g -lm
 make.exe: Leaving directory `/c/Users/janba/C-dev/Yabil'
  

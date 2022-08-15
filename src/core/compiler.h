@@ -2,6 +2,7 @@
 #define _COMPILER_H
 
 #include "../common/common.h"
+#include "lexer.h"
 #include "vm.h"
 
 typedef enum {
@@ -25,6 +26,17 @@ typedef struct {
     ParseFn infix;
     Precedence precedence;
 } ParseRule;
+
+typedef struct {
+    Token name;
+    int32_t depth;
+} Local;
+
+typedef struct {
+    Local locals[UINT24_COUNT];
+    int32_t local_count;
+    int32_t scope_depth;
+} Compiler;
 
 bool compile(const char* source, Chunk* chunk);
 

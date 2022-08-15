@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
+#include <math.h>
 #include "../common/common.h"
 #include "../common/debug.h"
 #include "../common/object.h"
@@ -215,6 +216,11 @@ static InterpreterResult run(){
             printf("\n");
         } NEXT();
         op_pop:; pop(); NEXT();
+        op_popn:; {
+            size_t num = vm.ip[0] | vm.ip[1] << 8 | vm.ip[2] << 16;
+            vm.ip+=3;
+            for (size_t i = 0; i < num; i++) pop();
+        } NEXT();
         op_define_global:; {
             ObjString* name = AS_STRING(READ_CONSTANT(READ_BYTE()));
             table_set(&vm.globals, name, peek(0));
@@ -264,6 +270,16 @@ static InterpreterResult run(){
             }
             vm.ip+=3;
         } NEXT();
+        op_get_local:;{
+            size_t slot = vm.ip[0] | vm.ip[1] << 8 | vm.ip[2] << 16;
+            push(vm.stack[slot]);
+            vm.ip+=3;
+        } NEXT();
+        op_set_local:;{
+            size_t slot = vm.ip[0] | vm.ip[1] << 8 | vm.ip[2] << 16;
+            vm.stack[slot] = peek(0);
+            vm.ip+=3;
+        } NEXT();
         op_array:; {
             size_t count = READ_BYTE();
             ObjArray* arr = take_array(); 
@@ -282,6 +298,19 @@ static InterpreterResult run(){
             for (size_t i = 0; i < count; i++) pop();
             push(OBJ_VAL(arr));
             vm.ip+=3;
+        } NEXT();
+        op_get_index:;{
+            if (!IS_NUM(peek(0)) && rintf(peek(0).as.number) == peek(0).as.number){
+                run_time_error("Index must be an integer number");
+                return INTERPRET_RUNTIME_ERR;
+            }
+            if (!IS_ARRAY(peek(1))){
+                run_time_error("Can only index into Array object");
+                return INTERPRET_RUNTIME_ERR;
+            }
+            Value index = pop();
+            Value array = pop();
+            push(AS_ARRAY(array)->elements.values[(size_t)index.as.number % AS_ARRAY(array)->elements.count]);
         } NEXT();
     }
     #undef READ_BYTE

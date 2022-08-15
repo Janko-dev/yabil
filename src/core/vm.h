@@ -5,7 +5,7 @@
 #include "../common/value.h"
 #include "../common/table.h"
 
-#define STACK_MAX 256
+#define STACK_MAX 1024
 
 typedef enum {
     INTERPRET_OK,

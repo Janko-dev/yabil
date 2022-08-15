@@ -10,7 +10,7 @@ make.exe all --print-data-base --no-builtin-variables --no-builtin-rules --quest
 make.exe: *** No rule to make target `all'.  Stop.
 
 
-# Make data base, printed on Sat Aug 13 12:29:52 2022
+# Make data base, printed on Mon Aug 15 10:46:11 2022
 
 # Variables
 
@@ -19,13 +19,13 @@ make.exe: *** No rule to make target `all'.  Stop.
 # automatic
 ?F = $(notdir $?)
 # makefile (from `Makefile', line 3)
- 
 SRC = src/
 # makefile
 MAKEFLAGS = Rrqp
 # automatic
 ?D = $(patsubst %/,%,$(dir $?))
 # automatic
+ 
 @D = $(patsubst %/,%,$(dir $@))
 # environment
 HOMEDRIVE = C:
@@ -44,7 +44,7 @@ WINDIR = C:\WINDOWS
 # environment
 VSCODE_NLS_CONFIG = {"locale":"nl","availableLanguages":{},"_languagePackSupport":true}
 # makefile (from `Makefile', line 2)
-CFLAGS = -Wall -Wextra -g 
+CFLAGS = -Wall -Wextra -g -lm
 # environment
 ONEDRIVE = C:\Users\janba\OneDrive
 # environment
@@ -86,7 +86,7 @@ IN = $(INPUT_COMMON) $(INPUT_CORE) $(SRC)main.c
 # automatic
 %F = $(notdir $%)
 # environment
-CHROME_CRASHPAD_PIPE_NAME = \\.\pipe\crashpad_1988_EDQBFFHICBDJBYRD
+CHROME_CRASHPAD_PIPE_NAME = \\.\pipe\crashpad_18320_FDHZLKGAGFWRXOEH
 # environment
 COMPUTERNAME = DESKTOP-3AAR4JN
 # environment
@@ -104,7 +104,7 @@ VSCODE_AMD_ENTRYPOINT = vs/workbench/api/node/extensionHostProcess
 # environment
 VSCODE_CODE_CACHE_PATH = C:\Users\janba\AppData\Roaming\Code\CachedData\6d9b74a70ca9c7733b29f0456fd8195364076dda
 # environment
-APPLICATION_INSIGHTS_NO_DIAGNOSTIC_CHANNEL = true
+APPLICATION_INSIGHTS_NO_DIAGNOSTIC_CHANNEL = 1
 # environment
 COMMONPROGRAMFILES = C:\Program Files (x86)\Common Files
 # environment
@@ -208,7 +208,7 @@ PROCESSOR_LEVEL = 23
 # environment
 TERM = cygwin
 # environment
-VSCODE_PID = 1988
+VSCODE_PID = 18320
 # environment
 USERDOMAIN_ROAMINGPROFILE = DESKTOP-3AAR4JN
 # variable set hash-table stats:
@@ -230,7 +230,6 @@ USERDOMAIN_ROAMINGPROFILE = DESKTOP-3AAR4JN
 
 # Files
 
- 
 # Not a target:
 src/core/vm.c:
 #  Implicit rule search has not been done.
@@ -267,7 +266,7 @@ src/common/object.c:
 # Not a target:
 Makefile:
 #  Implicit rule search has been done.
-#  Last modified 2022-08-13 09:01:39
+#  Last modified 2022-08-15 10:46:09
 #  File has been updated.
 #  Successfully updated.
 # variable set hash-table stats:
@@ -279,6 +278,7 @@ src/common/value.c:
 #  Modification time never checked.
 #  File has not been updated.
 
+ 
 # Not a target:
 src/core/compiler.c:
 #  Implicit rule search has not been done.
@@ -342,6 +342,6 @@ src/core/memory.c:
 # strcache size: total = 4096 / max = 4096 / min = 4096 / avg = 4096
 # strcache free: total = 4087 / max = 4087 / min = 4087 / avg = 4087
 
-# Finished Make data base on Sat Aug 13 12:29:52 2022
+# Finished Make data base on Mon Aug 15 10:46:11 2022
 
  
