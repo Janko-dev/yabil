@@ -16,6 +16,7 @@
         "lexer.h": "c",
         "debug.h": "c",
         "chunk.h": "c",
-        "object.h": "c"
+        "object.h": "c",
+        "math.h": "c"
     }
 }

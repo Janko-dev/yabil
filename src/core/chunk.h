@@ -9,6 +9,7 @@ typedef enum {
     OP_SUB,
     OP_MUL,
     OP_DIV,
+    OP_MOD,
     OP_NOT,
     OP_NEGATE,
     OP_CONSTANT_LONG,
@@ -36,6 +37,10 @@ typedef enum {
     OP_ARRAY,
     OP_ARRAY_LONG,
     OP_GET_INDEX,
+    OP_JUMP_IF_FALSE,
+    OP_JUMP,
+    OP_LOOP,
+    OP_CALL,
     OP_RETURN,
 } OpCode;
 

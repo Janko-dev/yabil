@@ -1,0 +1,13 @@
+fun map(n, m, fn){
+    var arr = [];
+    for (var i = n; i < m; i =i+1){
+        arr = arr + fn(i);
+    }
+    return arr;
+}
+
+fun square(n){
+    return n*n;
+}
+
+print map(5, 10, square);

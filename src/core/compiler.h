@@ -20,6 +20,11 @@ typedef enum {
     PREC_PRIMARY,
 } Precedence;
 
+typedef enum {
+    TYPE_FUNCTION,
+    TYPE_SCRIPT,
+} FunctionType;
+
 typedef void (*ParseFn)(bool can_assign);
 typedef struct {
     ParseFn prefix;
@@ -32,12 +37,16 @@ typedef struct {
     int32_t depth;
 } Local;
 
-typedef struct {
+typedef struct Compiler Compiler;
+struct Compiler {
+    struct Compiler* enclosing;
+    ObjFunction* fn;
+    FunctionType type;
     Local locals[UINT24_COUNT];
     int32_t local_count;
     int32_t scope_depth;
-} Compiler;
+};
 
-bool compile(const char* source, Chunk* chunk);
+ObjFunction* compile(const char* source);
 
 #endif //_COMPILER_H

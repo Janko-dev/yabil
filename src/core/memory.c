@@ -21,7 +21,14 @@ void free_object(Obj* object){
         case OBJ_ARRAY: {
             free_value_array(&((ObjArray*)object)->elements);
             FREE(ObjArray, object);
-        }
+        } break;
+        case OBJ_FUNCTION: {
+            free_chunk(&((ObjFunction*)object)->chunk);
+            FREE(ObjFunction, object);
+        } break;
+        case OBJ_NATIVE: {
+            FREE(ObjNative, object);
+        } break;
     }
 }
 

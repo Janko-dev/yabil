@@ -1,0 +1,12 @@
+print "1 == 1 = " + (1 == 1 ? "Passed" : "Failed");
+print "0 != 1 = " + (0 != 1 ? "Passed" : "Failed");
+print "1 <= 1 = " + (1 <= 1 ? "Passed" : "Failed");
+print "0 < 1 = "  + (0 < 1  ? "Passed" : "Failed");
+print "1 >= 1 = " + (1 >= 1 ? "Passed" : "Failed");
+print "1 > 0 = "  + (1 > 0  ? "Passed" : "Failed");
+
+print "true = " +                               (true ? "Passed" : "Failed");
+print "!false = " +                             (!false ? "Passed" : "Failed");
+print "!(true and false) = " +                  (!(true and false) ? "Passed" : "Failed");
+print "false or false or true or false = " +    (false or false or true or false ? "Passed" : "Failed");
+print "true or false and true = " +             (true or false and true ? "Passed" : "Failed");

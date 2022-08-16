@@ -176,6 +176,7 @@ Token scan_token(Lexer* lexer){
         case '/': return create_token(lexer, TOKEN_SLASH);
         case '?': return create_token(lexer, TOKEN_QMARK);
         case ':': return create_token(lexer, TOKEN_COLON);
+        case '%': return create_token(lexer, TOKEN_MOD);
 
         case '!': return create_token(lexer, match(lexer, '=') ? TOKEN_BANG_EQUAL : TOKEN_BANG);
         case '=': return create_token(lexer, match(lexer, '=') ? TOKEN_EQUAL_EQUAL : TOKEN_EQUAL); 

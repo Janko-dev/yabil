@@ -1,4 +1,13 @@
-var y = 1;
-var x = [1, 2, 3];
+fun a(){
+    b();
+}
 
-print x[y];
+fun b(){
+    c();
+}
+
+fun c(){
+    d();
+}
+
+a();

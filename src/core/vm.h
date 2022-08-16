@@ -4,8 +4,10 @@
 #include "chunk.h"
 #include "../common/value.h"
 #include "../common/table.h"
+#include "../common/object.h"
 
-#define STACK_MAX 1024
+#define FRAMES_MAX 64
+#define STACK_MAX (FRAMES_MAX * UINT8_MAX)
 
 typedef enum {
     INTERPRET_OK,
@@ -14,13 +16,19 @@ typedef enum {
 } InterpreterResult;
 
 typedef struct {
-    Chunk* chunk;               // chunk of compiled byte-code instructions that will be executed 
-    uint8_t* ip;                // instruction pointer
-    Value stack[STACK_MAX];     // stack of Values
-    Value* sp;                  // stack pointer
-    Table globals;              // hashtable of global variables
-    Table strings;              // hashtable of strings (used for interning strings)
-    Obj* objects;               // linked list of all heap allocated objects 
+    ObjFunction* function;
+    uint8_t* ip;
+    Value* slots;
+} CallFrame;
+
+typedef struct {
+    CallFrame frames[FRAMES_MAX];     // stack of function calls that get executed
+    size_t frame_count;               // number of call frames currently on the stack
+    Value stack[STACK_MAX];           // stack of Values
+    Value* sp;                        // stack pointer
+    Table globals;                    // hashtable of global variables
+    Table strings;                    // hashtable of strings (used for interning strings)
+    Obj* objects;                     // linked list of all heap allocated objects 
 } VM;
 
 extern VM vm;

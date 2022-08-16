@@ -60,6 +60,21 @@ ObjArray* take_array(){
     return array;
 }
 
+ObjFunction* new_function(){
+    ObjFunction* func = (ObjFunction*)alloc_obj(sizeof(ObjFunction), OBJ_FUNCTION);
+    func->arity = 0;
+    func->name = NULL;
+    init_chunk(&func->chunk);
+    return func;
+}
+
+ObjNative* new_native(NativeFn function, size_t arity){
+    ObjNative* native = (ObjNative*)alloc_obj(sizeof(ObjNative), OBJ_NATIVE);
+    native->function = function;
+    native->arity = arity;
+    return native;
+}
+
 void print_obj(Value value){
     switch (OBJ_TYPE(value)){
         case OBJ_STRING: printf("%s", AS_CSTRING(value)); break;
@@ -70,6 +85,16 @@ void print_obj(Value value){
                 if (i != AS_ARRAY(value)->elements.count - 1) printf(", ");
             }
             printf(" ]");
+        } break;
+        case OBJ_FUNCTION: {
+            if (AS_FUNCTION(value)->name == NULL) {
+                printf("<Script>");
+                return;
+            }
+            printf("<fn %s>", AS_FUNCTION(value)->name->chars);
+        } break;
+        case OBJ_NATIVE: {
+            printf("<native fn>");
         } break;
     }
 }

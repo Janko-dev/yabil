@@ -29,6 +29,14 @@ typedef struct {
     Value* values;
 } ValueArray;
 
+typedef struct {
+    bool success;
+    Value result;
+} NativeResult;
+
+#define NATIVE_SUCC(value) ((NativeResult){.success=true, .result=value})
+#define NATIVE_ERROR() ((NativeResult){.success=false, .result=NIL_VAL})
+
 #define IS_BOOL(value) ((value).type == VAL_BOOL)
 #define IS_NUM(value)  ((value).type == VAL_NUM)
 #define IS_NIL(value)  ((value).type == VAL_NIL)
