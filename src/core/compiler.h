@@ -35,7 +35,14 @@ typedef struct {
 typedef struct {
     Token name;
     int32_t depth;
+    bool is_captured;
 } Local;
+
+typedef struct {
+    int32_t index;
+    bool is_local;
+} Upvalue;
+
 
 typedef struct Compiler Compiler;
 struct Compiler {
@@ -45,6 +52,7 @@ struct Compiler {
     Local locals[UINT24_COUNT];
     int32_t local_count;
     int32_t scope_depth;
+    Upvalue upvalues[UINT24_COUNT];
 };
 
 ObjFunction* compile(const char* source);

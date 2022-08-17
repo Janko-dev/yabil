@@ -34,7 +34,7 @@ typedef struct {
     Value result;
 } NativeResult;
 
-#define NATIVE_SUCC(value) ((NativeResult){.success=true, .result=value})
+#define NATIVE_SUCC(value) ((NativeResult){.success=true, .result=(value)})
 #define NATIVE_ERROR() ((NativeResult){.success=false, .result=NIL_VAL})
 
 #define IS_BOOL(value) ((value).type == VAL_BOOL)

@@ -15,13 +15,44 @@ VM vm;
 static void define_native(const char* name, NativeFn function, size_t arity);
 static void run_time_error(const char* fmt, ...);
 
+static NativeResult native_len(int arg_count, Value* args){
+    UNUSED(arg_count);
+    if (IS_ARRAY(*args)){
+        return NATIVE_SUCC(NUM_VAL(AS_ARRAY(*args)->elements.count));
+    } else if (IS_STRING(*args)){
+        return NATIVE_SUCC(NUM_VAL(strlen(AS_CSTRING(*args))));
+    } else {
+        run_time_error("length function can only be used on arrays and strings");
+        return NATIVE_ERROR();
+    }
+}
+
 static NativeResult native_clock(int arg_count, Value* args){
     UNUSED(arg_count); UNUSED(args);
     return NATIVE_SUCC(NUM_VAL((double)clock() / CLOCKS_PER_SEC));
 }
 
-static NativeResult native_sqrt(int arg_count, Value* args){
+static NativeResult native_stdin(int arg_count, Value* args){
     UNUSED(arg_count); UNUSED(args);
+    char* s = NULL;
+    size_t count = 0;
+    size_t cap = 0;
+    char c;
+    while((c = fgetc(stdin)) != '\n'){
+        if (cap < count + 1){
+            size_t old_cap = cap;
+            cap = GROW_CAP(cap);
+            s = GROW_ARRAY(char, s, old_cap, cap);
+        }
+        s[count++] = c;
+    }
+    NativeResult res = NATIVE_SUCC(OBJ_VAL(copy_string(s, count)));
+    FREE(char, s);
+    return res;
+}
+
+static NativeResult native_sqrt(int arg_count, Value* args){
+    UNUSED(arg_count);
     if (!IS_NUM(*args)){
         run_time_error("Argument to native 'sqrt()' function expected to be a number value");
         return NATIVE_ERROR();
@@ -32,6 +63,7 @@ static NativeResult native_sqrt(int arg_count, Value* args){
 static void reset_stack(){
     vm.sp = vm.stack;
     vm.frame_count = 0;
+    vm.open_upvalues = NULL;
 }
 
 void init_VM(){
@@ -42,6 +74,8 @@ void init_VM(){
 
     define_native("clock", native_clock, 0);
     define_native("sqrt", native_sqrt, 1);
+    define_native("input", native_stdin, 0);
+    define_native("len", native_len, 1);
 }
 
 void free_VM(){
@@ -59,8 +93,8 @@ static void run_time_error(const char* fmt, ...){
     fprintf(stderr, "\n");
     for (int i = vm.frame_count - 1; i >= 0; i--){
         CallFrame* frame = &vm.frames[i];
-        ObjFunction* function = frame->function;
-        size_t line = get_line(&frame->function->chunk.lines, (size_t)(frame->ip - frame->function->chunk.code - 1));
+        ObjFunction* function = frame->closure->function;
+        size_t line = get_line(&frame->closure->function->chunk.lines, (size_t)(frame->ip - frame->closure->function->chunk.code - 1));
         fprintf(stderr, "[line %d] in ", line);
         if (function->name == NULL){
             fprintf(stderr, "script\n");
@@ -158,9 +192,9 @@ static void concatenate(Value a, Value b){
     }
 }
 
-static bool call(ObjFunction* function, uint8_t arg_count){
-    if (arg_count != function->arity){
-        run_time_error("Expected %d arguments but got %d", function->arity, arg_count);
+static bool call(ObjClosure* closure, uint8_t arg_count){
+    if (arg_count != closure->function->arity){
+        run_time_error("Expected %d arguments but got %d", closure->function->arity, arg_count);
         return false;
     }
 
@@ -170,8 +204,8 @@ static bool call(ObjFunction* function, uint8_t arg_count){
     }
     
     CallFrame* frame = &vm.frames[vm.frame_count++];
-    frame->function = function;
-    frame->ip = function->chunk.code;
+    frame->closure = closure;
+    frame->ip = closure->function->chunk.code;
     frame->slots = vm.sp - arg_count - 1;
     return true;
 }
@@ -179,7 +213,7 @@ static bool call(ObjFunction* function, uint8_t arg_count){
 static bool call_value(Value callee, uint8_t arg_count){
     if (IS_OBJ(callee)){
         switch(OBJ_TYPE(callee)){
-            case OBJ_FUNCTION: return call(AS_FUNCTION(callee), arg_count);
+            case OBJ_CLOSURE: return call(AS_CLOSURE(callee), arg_count);
             case OBJ_NATIVE: {
                 if (arg_count != AS_NATIVE(callee)->arity){
                     run_time_error("Expected %d arguments but got %d", AS_NATIVE(callee)->arity, arg_count);
@@ -197,6 +231,37 @@ static bool call_value(Value callee, uint8_t arg_count){
     }
     run_time_error("Can only call functions and classes");
     return false;
+}
+
+static ObjUpvalue* capture_upvalue(Value* local){
+    ObjUpvalue* prev_upval = NULL;
+    ObjUpvalue* upvalue = vm.open_upvalues;
+    while(upvalue != NULL && upvalue->location > local){
+        prev_upval = upvalue;
+        upvalue = upvalue->next;
+    }
+    if (upvalue != NULL && upvalue->location == local){
+        return upvalue;
+    }
+    ObjUpvalue* created_upvalue = new_upvalue(local);
+    created_upvalue->next = upvalue;
+    if (prev_upval == NULL){
+        vm.open_upvalues = created_upvalue;
+    } else {
+        prev_upval->next = created_upvalue;
+    }
+    return created_upvalue;
+}
+
+static void close_upvalues(Value* last){
+    while(vm.open_upvalues != NULL &&
+          vm.open_upvalues->location >= last)
+    {
+        ObjUpvalue* upvalue = vm.open_upvalues;
+        upvalue->closed = *upvalue->location;
+        upvalue->location = &upvalue->closed;
+        vm.open_upvalues = upvalue->next;
+    }
 }
 
 #define MODULO_OP()                                                 \
@@ -238,7 +303,7 @@ static InterpreterResult run(){
     #define READ_BYTE() (*(frame->ip++))
     #define DISPATCH() goto *dispatch_table[READ_BYTE()]
     #define NEXT() goto start
-    #define READ_CONSTANT(index) (frame->function->chunk.constants.values[index])
+    #define READ_CONSTANT(index) (frame->closure->function->chunk.constants.values[index])
     #define READ_3_BYTES() (frame->ip[0] | frame->ip[1] << 8 | frame->ip[2] << 16)
 
 #ifdef DEBUG_TRACE_EXECUTION
@@ -255,12 +320,13 @@ static InterpreterResult run(){
             }
             printf("\n");
             // printf("IP: %d --> %p\n", *vm.ip, vm.ip);
-            disassemble_instruction(&frame->function->chunk, (size_t)(frame->ip - frame->function->chunk.code));
+            disassemble_instruction(&frame->closure->function->chunk, (size_t)(frame->ip - frame->closure->function->chunk.code));
 #endif //DEBUG_TRACE_EXECUTION 
             DISPATCH();
 
         op_return:;{
             Value result = pop();
+            close_upvalues(frame->slots);
             vm.frame_count--;
             if (vm.frame_count == 0){
                 pop();
@@ -390,6 +456,16 @@ static InterpreterResult run(){
             frame->slots[slot] = peek(0);
             frame->ip+=3;
         } NEXT();
+        op_set_upvalue:;{
+            size_t slot = READ_3_BYTES();
+            *frame->closure->upvalues[slot]->location = peek(0);
+            frame->ip+=3;
+        } NEXT();
+        op_get_upvalue:;{
+            size_t slot = READ_3_BYTES();
+            push(*frame->closure->upvalues[slot]->location);
+            frame->ip+=3;
+        } NEXT();
         op_array:; {
             size_t count = READ_BYTE();
             ObjArray* arr = take_array(); 
@@ -414,13 +490,14 @@ static InterpreterResult run(){
                 run_time_error("Index must be an integer number");
                 return INTERPRET_RUNTIME_ERR;
             }
-            if (!IS_ARRAY(peek(1))){
-                run_time_error("Can only index into Array object");
+            if (!IS_ARRAY(peek(1)) && !IS_STRING(peek(1))){
+                run_time_error("Can only index into Array object or String");
                 return INTERPRET_RUNTIME_ERR;
             }
             Value index = pop();
             Value array = pop();
-            push(AS_ARRAY(array)->elements.values[(size_t)index.as.number % AS_ARRAY(array)->elements.count]);
+            if (IS_ARRAY(array)) push(AS_ARRAY(array)->elements.values[(size_t)index.as.number % AS_ARRAY(array)->elements.count]);
+            else push(OBJ_VAL(copy_string(AS_CSTRING(array) + (int)index.as.number, 1)));
         } NEXT();
         op_jump:; {
             size_t jmp_amt = READ_3_BYTES();
@@ -442,6 +519,41 @@ static InterpreterResult run(){
             }
             frame = &vm.frames[vm.frame_count-1];
         } NEXT();
+        op_closure:;{
+            ObjFunction* function = AS_FUNCTION(READ_CONSTANT(READ_BYTE()));
+            ObjClosure* closure = new_closure(function);
+            push(OBJ_VAL(closure));
+            for (int32_t i = 0; i < closure->upvalue_count; i++){
+                uint8_t is_local = READ_BYTE();
+                size_t index = READ_3_BYTES();
+                frame->ip+=3;
+                if (is_local){
+                    closure->upvalues[i] = capture_upvalue(frame->slots + index);
+                } else {
+                    closure->upvalues[i] = frame->closure->upvalues[index];
+                }
+            }
+        } NEXT();
+        op_closure_long:;{
+            ObjFunction* function = AS_FUNCTION(READ_CONSTANT(READ_3_BYTES()));
+            ObjClosure* closure = new_closure(function);
+            push(OBJ_VAL(closure));
+            frame->ip+=3;
+            for (int32_t i = 0; i < closure->upvalue_count; i++){
+                uint8_t is_local = READ_BYTE();
+                size_t index = READ_3_BYTES();
+                frame->ip+=3;
+                if (is_local){
+                    closure->upvalues[i] = capture_upvalue(frame->slots + index);
+                } else {
+                    closure->upvalues[i] = frame->closure->upvalues[index];
+                }
+            }
+        } NEXT();
+        op_close_upvalue:;{
+            close_upvalues(vm.sp - 1);
+            pop();
+        } NEXT();
     }
     #undef READ_BYTE
     #undef READ_CONSTANT
@@ -455,7 +567,10 @@ InterpreterResult interpret(const char* source){
     if (function == NULL) return INTERPRET_COMPILE_ERR;
 
     push(OBJ_VAL(function));
-    call(function, 0);
+    ObjClosure* closure = new_closure(function);
+    pop();
+    push(OBJ_VAL(closure));
+    call(closure, 0);
     
     return run();
     // printf("=== hashtable ===\n");

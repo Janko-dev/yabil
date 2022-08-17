@@ -16,7 +16,7 @@ typedef enum {
 } InterpreterResult;
 
 typedef struct {
-    ObjFunction* function;
+    ObjClosure* closure;
     uint8_t* ip;
     Value* slots;
 } CallFrame;
@@ -28,6 +28,7 @@ typedef struct {
     Value* sp;                        // stack pointer
     Table globals;                    // hashtable of global variables
     Table strings;                    // hashtable of strings (used for interning strings)
+    ObjUpvalue* open_upvalues;        // linked list of all open upvalues
     Obj* objects;                     // linked list of all heap allocated objects 
 } VM;
 

@@ -44,6 +44,7 @@ static void init_compiler(Compiler* compiler, FunctionType type){
 
     Local* local = &current->locals[current->local_count++];
     local->depth = 0;
+    local->is_captured = false;
     local->name.start = "";
     local->name.length = 0;
 }
@@ -154,6 +155,32 @@ static int32_t resolve_local(Compiler* compiler, Token* name){
     return -1;
 }
 
+static int32_t add_upvalue(Compiler* compiler, int32_t index, bool is_local){
+    size_t upvalue_count = compiler->fn->upvalue_count;
+    for (size_t i = 0; i < upvalue_count; i++){
+        Upvalue* upvalue = &compiler->upvalues[i];
+        if (upvalue->index == index && upvalue->is_local == is_local)
+            return i;
+    }
+    compiler->upvalues[upvalue_count].is_local = is_local;
+    compiler->upvalues[upvalue_count].index = index;
+    return compiler->fn->upvalue_count++;
+    
+}
+
+static int32_t resolve_upvalue(Compiler* compiler, Token* name){
+    if (compiler->enclosing == NULL) return -1;
+    int32_t local = resolve_local(compiler->enclosing, name);
+    if (local != -1) {
+        compiler->enclosing->locals[local].is_captured = true;
+        return add_upvalue(compiler, local, true);
+    }
+    int32_t upvalue = resolve_upvalue(compiler->enclosing, name);
+    if (upvalue != -1) return add_upvalue(compiler, upvalue, false);
+    
+    return -1; 
+}
+
 // static size_t identifier_constant(Token* name){
 //     return add_constant(current_chunk(), OBJ_VAL(copy_string(name->start, name->length)));
 // }
@@ -191,15 +218,16 @@ static void begin_scope(){
 
 static void end_scope(){
     current->scope_depth--;
-    size_t num_pops = 0;
     while(current->local_count > 0 && 
           current->locals[current->local_count - 1].depth > current->scope_depth)
     {
-        num_pops++;
+        if (current->locals[current->local_count-1].is_captured){
+            emit_byte(OP_CLOSE_UPVALUE);
+        } else {
+            emit_byte(OP_POP);
+        }
         current->local_count--;
     }
-    emit_bytes(OP_POPN, num_pops);
-    emit_bytes(num_pops >> 8, num_pops >> 16);
 }
 
 static void add_local(Token name){
@@ -210,6 +238,7 @@ static void add_local(Token name){
     Local* local = &current->locals[current->local_count++];
     local->name = name;
     local->depth = -1;
+    local->is_captured = false;
 }
 
 static void declare_var(){
@@ -314,12 +343,17 @@ static void function(FunctionType type){
     block();
     ObjFunction* function = end_compiler();
     if (current_chunk()->constants.count + 1 > UINT8_MAX){
-        emit_byte(OP_CONSTANT_LONG);
+        emit_byte(OP_CLOSURE_LONG);
         write_constant(current_chunk(), OBJ_VAL(function), parser.previous.line);
     } else {
-        emit_bytes(OP_CONSTANT, add_constant(current_chunk(), OBJ_VAL(function)));
+        emit_bytes(OP_CLOSURE, add_constant(current_chunk(), OBJ_VAL(function)));
     }
-    
+    for (size_t i = 0; i < function->upvalue_count; i++){
+        emit_byte(compiler.upvalues[i].is_local ? 1 : 0);
+        int32_t index = compiler.upvalues[i].index;
+        emit_bytes(index, index << 8);
+        emit_byte(index << 16);
+    }
 }
 
 static void function_declaration(){
@@ -513,13 +547,6 @@ static void indices(bool can_assign){\
     emit_byte(OP_GET_INDEX);
 }
 
-// x[5+2] = "hello";
-// OP_GET_GLOBAL x
-// OP_CONST 5
-// OP_CONST 2
-// OP_ADD
-// OP_CONST "hello"
-// OP_SET_INDEX
 static void variable(bool can_assign){
     
     uint8_t get_op, set_op;
@@ -527,6 +554,9 @@ static void variable(bool can_assign){
     if (arg != -1){
         get_op = OP_GET_LOCAL;
         set_op = OP_SET_LOCAL;
+    } else if ((arg = resolve_upvalue(current, &parser.previous)) != -1){
+        get_op = OP_GET_UPVALUE;
+        set_op = OP_SET_UPVALUE;
     } else {
         Value value = OBJ_VAL(copy_string(parser.previous.start, parser.previous.length));
         arg = add_constant(current_chunk(), value);
@@ -536,15 +566,21 @@ static void variable(bool can_assign){
 
     if (can_assign && match(TOKEN_EQUAL)){
         expression();
-        if (set_op == OP_SET_LOCAL || current_chunk()->constants.count + 1 > UINT8_MAX){
+        if (set_op == OP_SET_LOCAL || set_op == OP_SET_UPVALUE){
             emit_bytes(set_op, (uint8_t)arg);
+            emit_bytes((uint8_t)(arg >> 8), (uint8_t)(arg >> 16));
+        } else if (current_chunk()->constants.count + 1 > UINT8_MAX){
+            emit_bytes(OP_SET_GLOBAL_LONG, (uint8_t)arg);
             emit_bytes((uint8_t)(arg >> 8), (uint8_t)(arg >> 16));
         } else {
             emit_bytes(set_op, arg);
         }
     } else {
-        if (get_op == OP_GET_LOCAL || current_chunk()->constants.count + 1 > UINT8_MAX){
+        if (get_op == OP_GET_LOCAL || get_op == OP_GET_UPVALUE){
             emit_bytes(get_op, (uint8_t)arg);
+            emit_bytes((uint8_t)(arg >> 8), (uint8_t)(arg >> 16));
+        } else if (current_chunk()->constants.count + 1 > UINT8_MAX){
+            emit_bytes(OP_SET_GLOBAL_LONG, (uint8_t)arg);
             emit_bytes((uint8_t)(arg >> 8), (uint8_t)(arg >> 16));
         } else {
             emit_bytes(get_op, arg);
@@ -553,28 +589,6 @@ static void variable(bool can_assign){
             indices(can_assign);
         }
     }
-
-
-    // if (can_assign && match(TOKEN_EQUAL)){
-    //     expression();
-    //     if (current_chunk()->constants.count + 1 > UINT8_MAX){
-    //         emit_byte(OP_SET_GLOBAL_LONG);
-    //         write_constant(current_chunk(), value, parser.previous.line);
-    //     } else {
-    //         emit_bytes(OP_SET_GLOBAL, add_constant(current_chunk(), value));
-    //     }
-    //     // TODO array index setter
-    // } else {
-    //     if (current_chunk()->constants.count + 1 > UINT8_MAX){
-    //         emit_byte(OP_GET_GLOBAL_LONG);
-    //         write_constant(current_chunk(), value, parser.previous.line);
-    //     } else {
-    //         emit_bytes(OP_GET_GLOBAL, add_constant(current_chunk(), value));
-    //     }
-    //     while (match(TOKEN_LEFT_BRACKET)){
-    //         indices(can_assign);
-    //     }
-    // }
 
 }
 

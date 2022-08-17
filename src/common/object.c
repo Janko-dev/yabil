@@ -63,6 +63,7 @@ ObjArray* take_array(){
 ObjFunction* new_function(){
     ObjFunction* func = (ObjFunction*)alloc_obj(sizeof(ObjFunction), OBJ_FUNCTION);
     func->arity = 0;
+    func->upvalue_count = 0;
     func->name = NULL;
     init_chunk(&func->chunk);
     return func;
@@ -73,6 +74,32 @@ ObjNative* new_native(NativeFn function, size_t arity){
     native->function = function;
     native->arity = arity;
     return native;
+}
+
+ObjClosure* new_closure(ObjFunction* function){
+    ObjUpvalue** upvalues = (ObjUpvalue**)reallocate(NULL, 0, sizeof(ObjUpvalue*) * function->upvalue_count);
+    for (size_t i = 0; i < function->upvalue_count; i++) upvalues[i] = NULL;
+    ObjClosure* closure = (ObjClosure*)alloc_obj(sizeof(ObjClosure), OBJ_CLOSURE);
+    closure->function = function;
+    closure->upvalues = upvalues;
+    closure->upvalue_count = function->upvalue_count;
+    return closure;
+}
+
+ObjUpvalue* new_upvalue(Value* slot){
+    ObjUpvalue* upval = (ObjUpvalue*)alloc_obj(sizeof(ObjUpvalue), OBJ_UPVALUE);
+    upval->location = slot;
+    upval->next = NULL;
+    upval->closed = NIL_VAL;
+    return upval;
+}
+
+static void print_function(ObjFunction* fn){
+    if (fn->name == NULL) {
+        printf("<Script>");
+        return;
+    }
+    printf("<fn %s>", fn->name->chars);
 }
 
 void print_obj(Value value){
@@ -86,15 +113,11 @@ void print_obj(Value value){
             }
             printf(" ]");
         } break;
-        case OBJ_FUNCTION: {
-            if (AS_FUNCTION(value)->name == NULL) {
-                printf("<Script>");
-                return;
-            }
-            printf("<fn %s>", AS_FUNCTION(value)->name->chars);
-        } break;
+        case OBJ_FUNCTION: print_function(AS_FUNCTION(value)); break;
         case OBJ_NATIVE: {
             printf("<native fn>");
         } break;
+        case OBJ_CLOSURE: print_function(AS_CLOSURE(value)->function); break;
+        case OBJ_UPVALUE: printf("Upvalue"); break;
     }
 }

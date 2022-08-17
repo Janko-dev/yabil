@@ -1,0 +1,12 @@
+fun substr(arr, i){
+    var res = "";
+    for (var j = i; j < len(arr); j=j+1){
+        res = res + arr[j];
+    }
+    return res;
+}
+
+var arr = "Hello World";
+for (var i = 0; i < len(arr); i=i+1){
+    print arr[i] + substr(arr, i+1);
+}
