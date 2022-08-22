@@ -7,8 +7,10 @@
 
 // #define DEBUG_PRINT_CODE
 // #define DEBUG_TRACE_EXECUTION
+#define DEBUG_STRESS_GC
+// #define DEBUG_LOG_GC
 
 #define UNUSED(val) (void)(val)
-#define UINT24_COUNT ((UINT8_MAX*3)+1)
+#define UINT24_COUNT ((size_t)1 << 12)
 
 #endif //_COMMON_H

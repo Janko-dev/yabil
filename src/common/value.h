@@ -45,7 +45,7 @@ typedef struct {
 #define BOOL_VAL(value) ((Value){.type=VAL_BOOL, {.boolean=value}})
 #define NUM_VAL(value)  ((Value){.type=VAL_NUM, {.number=value}})
 #define NIL_VAL         ((Value){.type=VAL_NIL, {.number=0}})
-#define OBJ_VAL(object) ((Value){.type=VAL_OBJ, {.obj=(Obj*)object}})
+#define OBJ_VAL(object) ((Value){.type=VAL_OBJ, {.obj=(Obj*)(object)}})
 
 void init_value_array(ValueArray* val_array);
 void free_value_array(ValueArray* val_array);
@@ -54,5 +54,6 @@ void write_value_array(ValueArray* val_array, Value value);
 bool values_equal(Value a, Value b);
 
 void print_value(Value val);
+void print_value_array(ValueArray* arr);
 
 #endif //_VALUE_H

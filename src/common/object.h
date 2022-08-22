@@ -3,6 +3,7 @@
 
 #include "common.h"
 #include "value.h"
+#include "table.h"
 #include "../core/chunk.h"
 
 typedef enum {
@@ -12,10 +13,13 @@ typedef enum {
     OBJ_NATIVE,
     OBJ_CLOSURE,
     OBJ_UPVALUE,
+    OBJ_CLASS,
+    OBJ_INSTANCE,
 } ObjType;
 
 struct Obj {
     ObjType type;
+    bool is_marked;
     struct Obj* next;
 };
 
@@ -23,6 +27,17 @@ struct ObjArray {
     Obj obj;
     ValueArray elements;
 };
+
+typedef struct {
+    Obj obj;
+    ObjString* name;
+} ObjClass;
+
+typedef struct {
+    Obj obj;
+    ObjClass* instance_of;
+    Table fields;
+} ObjInstance;
 
 typedef struct {
     Obj obj;
@@ -71,6 +86,8 @@ static inline bool is_obj_type(Value value, ObjType type){
 #define IS_FUNCTION(value) is_obj_type(value, OBJ_FUNCTION)
 #define IS_NATIVE(value) is_obj_type(value, OBJ_NATIVE)
 #define IS_CLOSURE(value) is_obj_type(value, OBJ_CLOSURE)
+#define IS_CLASS(value) is_obj_type(value, OBJ_CLASS)
+#define IS_INSTANCE(value) is_obj_type(value, OBJ_INSTANCE)
 
 #define AS_STRING(value) ((ObjString*)(value).as.obj)
 #define AS_CSTRING(value) (((ObjString*)(value).as.obj)->chars)
@@ -79,16 +96,24 @@ static inline bool is_obj_type(Value value, ObjType type){
 #define AS_NATIVE_FN(value) (((ObjNative*)(value).as.obj)->function)
 #define AS_NATIVE(value) ((ObjNative*)(value).as.obj)
 #define AS_CLOSURE(value) ((ObjClosure*)(value).as.obj)
+#define AS_CLASS(value) ((ObjClass*)(value).as.obj)
+#define AS_INSTANCE(value) ((ObjInstance*)(value).as.obj)
 
 ObjString* copy_string(const char* chars, size_t length);
 ObjString* take_string(char* chars, size_t length);
-void print_obj(Value value);
-
 ObjArray* take_array();
 
 ObjFunction* new_function();
 ObjUpvalue* new_upvalue(Value* slot);
 ObjNative* new_native(NativeFn function, size_t arity);
 ObjClosure* new_closure(ObjFunction* function);
+ObjClass* new_class(ObjString* name);
+ObjInstance* new_instance(ObjClass* instance_of);
+
+void print_obj(Value value);
+
+#ifdef DEBUG_LOG_GC
+const char* obj_type_tostring(ObjType type);
+#endif
 
 #endif //_OBJECT_H

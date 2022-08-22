@@ -51,8 +51,14 @@ void run_file(const char* file_path){
     char* source = read_file(file_path);
     InterpreterResult result = interpret(source);
     free(source);
-    if (result == INTERPRET_COMPILE_ERR) exit(65);
-    if (result == INTERPRET_RUNTIME_ERR) exit(65);
+    if (result == INTERPRET_COMPILE_ERR) {
+        fprintf(stderr, "Compilation error\n");
+        exit(65);
+    }
+    if (result == INTERPRET_RUNTIME_ERR) {
+        fprintf(stderr, "Runtime error\n");
+        exit(65);
+    }
 }
 
 int main(int argc, const char** argv){

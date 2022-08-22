@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -g
+CFLAGS = -Wall -Wextra -g -std=c99
 LIBS = -lm
 SRC = src/
 CORE = $(SRC)core/

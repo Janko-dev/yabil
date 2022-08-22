@@ -43,5 +43,14 @@ void print_value(Value val){
         case VAL_BOOL: printf(val.as.boolean ? "true" : "false"); break;
         case VAL_OBJ:  print_obj(val); break;
     }
-    
+}
+
+
+void print_value_array(ValueArray* arr){
+    printf("======== Value array ========");
+    for (size_t i = 0; i < arr->count; i++){
+        print_value(arr->values[i]);
+        printf("\n");
+    }
+    printf("============================");
 }

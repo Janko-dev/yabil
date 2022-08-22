@@ -14,8 +14,8 @@ fun make_vec(x, y){
 }
 
 var vec = make_vec(20, 10);
-
-print vec[0]() + " : " + vec[1]();
-vec[2](vec[0]() + 39);
-print vec[0]() + " : " + vec[1]();
+print vec[0]();
+print vec[1]();
 print vec[4]();
+
+

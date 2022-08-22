@@ -1,23 +1,12 @@
-
-fun make_vec(x, y){
-    var _x = x;
-    var _y = y;
-    
-    fun getX(){ return _x; }
-    fun setX(x){ _x = x; }
-    fun getY(){ return _y; }
-    fun setY(y){ _y = y; }
-
-    return [getX, getY, setX, setY];
+fun makecounter(){
+    var i = 0;
+    fun count(){
+        i = i + 1;
+        return i;
+    }
+    return count; 
 }
 
-fun add(vec){
-    return vec[0]() + vec[1]();
-}
-
-var vec = make_vec(20, 10);
-
-print vec[0]() + " : " + vec[1]();
-vec[2](vec[0]() + 39);
-print vec[0]() + " : " + vec[1]();
-print add(vec);
+var counter = makecounter();
+print counter();
+print counter();

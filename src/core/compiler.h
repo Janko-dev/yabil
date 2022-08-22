@@ -56,5 +56,6 @@ struct Compiler {
 };
 
 ObjFunction* compile(const char* source);
+void mark_compiler_roots();
 
 #endif //_COMPILER_H

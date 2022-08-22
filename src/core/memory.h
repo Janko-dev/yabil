@@ -5,6 +5,8 @@
 #include "../common/object.h"
 #include "vm.h"
 
+#define GC_HEAP_GROW_FACTOR 2
+
 #define GROW_CAP(cap) ((cap) < 8 ? 8 : (cap) * 2)
 #define GROW_ARRAY(type, ptr, old_count, new_count) \
     (type*)reallocate(ptr, sizeof(type) * (old_count), sizeof(type) * (new_count))\
@@ -19,6 +21,9 @@
 
 void* reallocate(void* pointer, size_t old_size, size_t new_size);
 void free_objects();
+void collect_garbage();
+void mark_object(Obj* object);
+void mark_value(Value value);
 
 #endif //_MEMORY_H
 

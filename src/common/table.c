@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "../core/memory.h"
 #include "object.h"
@@ -91,6 +92,35 @@ void table_add_all(Table* from, Table* to){
         Entry* entry = from->entries + i;
         if (entry->key != NULL){
             table_set(to, entry->key, entry->value);
+        }
+    }
+}
+
+void table_print(Table* table, const char* name){
+    printf("=== hashtable %s ===\n", name);
+    for (size_t i = 0; i < table->cap; i++){
+        if (table->entries[i].key) {
+            printf("%s -> ", table->entries[i].key->chars);
+            print_value(table->entries[i].value);
+            printf("\n");
+        } else printf("(null)\n");
+    }
+    printf("===================\n");
+}
+
+void table_mark(Table* table){
+    for (size_t i = 0; i < table->cap; i++){
+        Entry* entry = &table->entries[i];
+        mark_object((Obj*)entry->key);
+        mark_value(entry->value);
+    }
+}
+
+void table_remove_white_marked_obj(Table* table){
+    for (size_t i = 0; i < table->cap; i++){
+        Entry* entry = &table->entries[i];
+        if (entry->key != NULL && !entry->key->obj.is_marked){
+            table_delete(table, entry->key);
         }
     }
 }

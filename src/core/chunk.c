@@ -85,6 +85,8 @@ void write_constant(Chunk* chunk, Value val, size_t line){
 }
 
 size_t add_constant(Chunk* chunk, Value val){
+    push(val);
     write_value_array(&chunk->constants, val);
+    pop();
     return chunk->constants.count - 1;
 }

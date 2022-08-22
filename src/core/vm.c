@@ -69,6 +69,13 @@ static void reset_stack(){
 void init_VM(){
     reset_stack();
     vm.objects = NULL;
+
+    vm.gray_cap = 0;
+    vm.gray_count = 0;
+    vm.gray_stack = NULL;
+    vm.bytes_allocated = 0;
+    vm.next_GC = 1024*1024;
+
     init_table(&vm.globals);
     init_table(&vm.strings);
 
@@ -91,6 +98,11 @@ static void run_time_error(const char* fmt, ...){
     va_end(args);
 
     fprintf(stderr, "\n");
+    if (vm.frame_count == 0){
+        reset_stack();
+        return;
+    }
+
     for (int i = vm.frame_count - 1; i >= 0; i--){
         CallFrame* frame = &vm.frames[i];
         ObjFunction* function = frame->closure->function;
@@ -128,6 +140,8 @@ static void concat_string(char* a, size_t size_a, char* b, size_t size_b){
     memcpy(chars + size_a, b, size_b);
     chars[length] = '\0';
     ObjString* result = take_string(chars, length);
+    pop();
+    pop();
     push(OBJ_VAL(result));
 }
 
@@ -158,6 +172,8 @@ static void concatenate(Value a, Value b){
         for (size_t i = 0; i < AS_ARRAY(b)->elements.count; i++){
             write_value_array(&AS_ARRAY(a)->elements, AS_ARRAY(b)->elements.values[i]);
         }
+        pop();
+        pop();
         push(a);
         return;
     }
@@ -168,12 +184,16 @@ static void concatenate(Value a, Value b){
             AS_ARRAY(b)->elements.values[i] = AS_ARRAY(b)->elements.values[i-1];
         }
         AS_ARRAY(b)->elements.values[0] = a;
+        pop();
+        pop();
         push(b);
         return;
     }
 
     if (IS_ARRAY(a) && !IS_ARRAY(b)){
         write_value_array(&AS_ARRAY(a)->elements, b);
+        pop();
+        pop();
         push(a);
         return;
     }
@@ -194,11 +214,12 @@ static void concatenate(Value a, Value b){
 
 static bool call(ObjClosure* closure, uint8_t arg_count){
     if (arg_count != closure->function->arity){
+        printf("DEBUG: %zu\n", closure->function->arity);
         run_time_error("Expected %d arguments but got %d", closure->function->arity, arg_count);
         return false;
     }
 
-    if (vm.frame_count == FRAMES_MAX){
+    if (vm.frame_count >= FRAMES_MAX){
         run_time_error("Stack overflow error");
         return false;
     }
@@ -224,6 +245,11 @@ static bool call_value(Value callee, uint8_t arg_count){
                 if (!res.success) return false;
                 vm.sp -= arg_count + 1;
                 push(res.result);
+                return true;
+            } break;
+            case OBJ_CLASS: {
+                ObjClass* class_obj = AS_CLASS(callee);
+                vm.sp[-arg_count - 1] = OBJ_VAL(new_instance(class_obj));
                 return true;
             } break;
             default: break;
@@ -319,8 +345,9 @@ static InterpreterResult run(){
                 printf("]");
             }
             printf("\n");
-            // printf("IP: %d --> %p\n", *vm.ip, vm.ip);
+            // printf("offset: %zu\n", (size_t)(frame->ip - frame->closure->function->chunk.code));
             disassemble_instruction(&frame->closure->function->chunk, (size_t)(frame->ip - frame->closure->function->chunk.code));
+            // table_print(&vm.globals, "Globals");
 #endif //DEBUG_TRACE_EXECUTION 
             DISPATCH();
 
@@ -331,7 +358,7 @@ static InterpreterResult run(){
             if (vm.frame_count == 0){
                 pop();
                 return INTERPRET_OK; 
-            }
+            } 
             vm.sp = frame->slots;
             push(result);
             frame = &vm.frames[vm.frame_count - 1];
@@ -360,10 +387,13 @@ static InterpreterResult run(){
             *(vm.sp-1) = BOOL_VAL(is_falsey(*(vm.sp-1)));
         } NEXT();
         op_add:;{
-            Value b = pop();
-            Value a = pop();
-            if (IS_NUM(a) && IS_NUM(b)) push(NUM_VAL(a.as.number + b.as.number));
-            else if (IS_STRING(a) || IS_STRING(b)) concatenate(a, b);
+            Value b = peek(0);
+            Value a = peek(1);
+            if (IS_NUM(a) && IS_NUM(b)) {
+                pop();
+                pop();
+                push(NUM_VAL(a.as.number + b.as.number));
+            } else if (IS_STRING(a) || IS_STRING(b)) concatenate(a, b);
             else if (IS_ARRAY(a) || IS_ARRAY(b)) concatenate(a, b);
             else {
                 run_time_error("undefined add operation");
@@ -398,13 +428,22 @@ static InterpreterResult run(){
         } NEXT();
         op_define_global:; {
             ObjString* name = AS_STRING(READ_CONSTANT(READ_BYTE()));
-            table_set(&vm.globals, name, peek(0));
+            // printf("DEBUG:\n");
+            // print_value_array(&frame->closure->function->chunk.constants);
+            // printf("\n");
+            // print_obj(OBJ_VAL(name));
+            // printf("\n");
+            push(OBJ_VAL(name));
+            table_set(&vm.globals, name, peek(1));
+            pop();
             pop();
         } NEXT();
         op_define_global_long:; {
             size_t const_index = READ_3_BYTES();
             ObjString* name = AS_STRING(READ_CONSTANT(const_index));
-            table_set(&vm.globals, name, peek(0));
+            push(OBJ_VAL(name));
+            table_set(&vm.globals, name, peek(1));
+            pop();
             pop();
             frame->ip+=3;
         } NEXT();
@@ -469,18 +508,22 @@ static InterpreterResult run(){
         op_array:; {
             size_t count = READ_BYTE();
             ObjArray* arr = take_array(); 
+            push(OBJ_VAL(arr));
             for (size_t i = 0; i < count; i++){
-                write_value_array(&arr->elements, peek(count-i-1));
+                write_value_array(&arr->elements, peek(count-i));
             }
+            pop();
             for (size_t i = 0; i < count; i++) pop();
             push(OBJ_VAL(arr));
         } NEXT();
         op_array_long:; {
             size_t count = READ_3_BYTES();
-            ObjArray* arr = take_array(); 
+            ObjArray* arr = take_array();
+            push(OBJ_VAL(arr));
             for (size_t i = 0; i < count; i++){
-                write_value_array(&arr->elements, peek(count-i-1));
+                write_value_array(&arr->elements, peek(count-i));
             }
+            pop();
             for (size_t i = 0; i < count; i++) pop();
             push(OBJ_VAL(arr));
             frame->ip+=3;
@@ -498,6 +541,26 @@ static InterpreterResult run(){
             Value array = pop();
             if (IS_ARRAY(array)) push(AS_ARRAY(array)->elements.values[(size_t)index.as.number % AS_ARRAY(array)->elements.count]);
             else push(OBJ_VAL(copy_string(AS_CSTRING(array) + (int)index.as.number, 1)));
+        } NEXT();
+        op_set_index:;{
+            if (!IS_NUM(peek(1)) && rintf(peek(1).as.number) == peek(1).as.number){
+                run_time_error("Index must be an integer number");
+                return INTERPRET_RUNTIME_ERR;
+            }
+            if (!IS_ARRAY(peek(2)) && !IS_STRING(peek(2))){
+                run_time_error("Can only index into Array object or String");
+                return INTERPRET_RUNTIME_ERR;
+            }
+            Value new_val = pop();
+            Value index = pop();
+            if (IS_ARRAY(peek(0))){
+                AS_ARRAY(peek(0))->elements.values[(size_t)index.as.number % AS_ARRAY(peek(0))->elements.count] = new_val;
+            } else if (IS_STRING(new_val) && AS_STRING(new_val)->length == 1){
+                AS_CSTRING(peek(0))[(size_t)index.as.number % AS_STRING(peek(0))->length] = AS_CSTRING(new_val)[0];
+            } else {
+                run_time_error("Can only assign characters to indices of strings");
+                return INTERPRET_RUNTIME_ERR;
+            }
         } NEXT();
         op_jump:; {
             size_t jmp_amt = READ_3_BYTES();
@@ -521,7 +584,9 @@ static InterpreterResult run(){
         } NEXT();
         op_closure:;{
             ObjFunction* function = AS_FUNCTION(READ_CONSTANT(READ_BYTE()));
+            push(OBJ_VAL(function));
             ObjClosure* closure = new_closure(function);
+            pop();
             push(OBJ_VAL(closure));
             for (int32_t i = 0; i < closure->upvalue_count; i++){
                 uint8_t is_local = READ_BYTE();
@@ -536,7 +601,9 @@ static InterpreterResult run(){
         } NEXT();
         op_closure_long:;{
             ObjFunction* function = AS_FUNCTION(READ_CONSTANT(READ_3_BYTES()));
+            push(OBJ_VAL(function));
             ObjClosure* closure = new_closure(function);
+            pop();
             push(OBJ_VAL(closure));
             frame->ip+=3;
             for (int32_t i = 0; i < closure->upvalue_count; i++){
@@ -554,6 +621,19 @@ static InterpreterResult run(){
             close_upvalues(vm.sp - 1);
             pop();
         } NEXT();
+        op_class:; push(OBJ_VAL(new_class(AS_STRING(READ_CONSTANT(READ_BYTE()))))); NEXT();
+        op_get_prop:;{
+
+        } NEXT();
+        op_get_prop_long:;{
+
+        } NEXT();
+        op_set_prop:;{
+
+        } NEXT();
+        op_set_prop_long:;{
+
+        } NEXT();
     }
     #undef READ_BYTE
     #undef READ_CONSTANT
@@ -566,6 +646,7 @@ InterpreterResult interpret(const char* source){
     ObjFunction* function = compile(source);
     if (function == NULL) return INTERPRET_COMPILE_ERR;
 
+
     push(OBJ_VAL(function));
     ObjClosure* closure = new_closure(function);
     pop();
@@ -573,9 +654,4 @@ InterpreterResult interpret(const char* source){
     call(closure, 0);
     
     return run();
-    // printf("=== hashtable ===\n");
-    // for (size_t i = 0; i < vm.strings.cap; i++){
-    //     if (vm.strings.entries[i].key) printf("%s\n", vm.strings.entries[i].key->chars);
-    //     else printf("(null)\n");
-    // }
 }

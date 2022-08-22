@@ -5,4 +5,5 @@ fun fib(n){
 
 var start = clock();
 print fib(35);
-print clock() - start;
+var end = clock() - start;
+print "Time: " + end;

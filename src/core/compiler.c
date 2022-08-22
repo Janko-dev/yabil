@@ -5,6 +5,7 @@
 #include "../common/object.h"
 #include "compiler.h"
 #include "lexer.h"
+#include "memory.h"
 
 #ifdef DEBUG_PRINT_CODE
 #include "../common/debug.h"
@@ -18,6 +19,7 @@ static ParseRule* get_rule(TokenType type);
 static void declaration();
 static void var_declaration();
 static void function_declaration();
+static void class_declaration();
 static void statement();
 static void print_statement();
 static void if_statement();
@@ -37,6 +39,7 @@ static void init_compiler(Compiler* compiler, FunctionType type){
     compiler->local_count = 0;
     compiler->scope_depth = 0;
     compiler->fn = new_function();
+    // push(OBJ_VAL(compiler->fn));
     current = compiler;
     if (type != TYPE_SCRIPT){
         current->fn->name = copy_string(parser.previous.start, parser.previous.length);
@@ -194,6 +197,7 @@ static ObjFunction* end_compiler(){
     }
 #endif //DEBUG_PRINT_CODE
     current = current->enclosing;
+    // pop();
     return fn;
 }
 
@@ -259,6 +263,7 @@ static void define_var(Value value){
         current->locals[current->local_count-1].depth = current->scope_depth; // defining local variable
         return;
     }
+
     if (current_chunk()->constants.count + 1 > UINT8_MAX){
         emit_byte(OP_DEFINE_GLOBAL_LONG);
         write_constant(current_chunk(), value, parser.previous.line);
@@ -300,6 +305,8 @@ static void declaration(){
         var_declaration();
     } else if (match(TOKEN_FUN)){
         function_declaration();
+    } else if (match(TOKEN_CLASS)){
+        class_declaration();
     } else {
         statement();
     }
@@ -313,8 +320,9 @@ static void var_declaration(){
         declare_var();
     } else {
         value = OBJ_VAL(copy_string(parser.previous.start, parser.previous.length));
+        push(value);
     }
-
+    
     if (match(TOKEN_EQUAL)){
         expression();
     } else {
@@ -323,6 +331,9 @@ static void var_declaration(){
     consume(TOKEN_SEMICOLON, "Expected ';' after variable declaration");
     
     define_var(value);
+    if (current->scope_depth == 0){
+        pop();
+    }
 }
 
 static void function(FunctionType type){
@@ -350,7 +361,7 @@ static void function(FunctionType type){
     }
     for (size_t i = 0; i < function->upvalue_count; i++){
         emit_byte(compiler.upvalues[i].is_local ? 1 : 0);
-        int32_t index = compiler.upvalues[i].index;
+        size_t index = compiler.upvalues[i].index;
         emit_bytes(index, index << 8);
         emit_byte(index << 16);
     }
@@ -363,24 +374,41 @@ static void function_declaration(){
         declare_var();
     } else {
         value = OBJ_VAL(copy_string(parser.previous.start, parser.previous.length));
+        push(value);
     }
     
     if (current->scope_depth > 0) {
         current->locals[current->local_count-1].depth = current->scope_depth; // defining local variable
     }
-
+    
     function(TYPE_FUNCTION);
 
     if (current->scope_depth > 0) {
         current->locals[current->local_count-1].depth = current->scope_depth; // defining local variable
         return;
     }
+    
+    
     if (current_chunk()->constants.count + 1 > UINT8_MAX){
         emit_byte(OP_DEFINE_GLOBAL_LONG);
         write_constant(current_chunk(), value, parser.previous.line);
     } else {
         emit_bytes(OP_DEFINE_GLOBAL, add_constant(current_chunk(), value));
     }
+    pop();
+}
+
+static void class_declaration(){
+    consume(TOKEN_IDENTIFIER, "Expected class name");
+    Value name = OBJ_VAL(copy_string(parser.previous.start, parser.previous.length));
+    declare_var();
+
+    emit_bytes(OP_CLASS, add_constant(current_chunk(), name));
+    define_var(name);
+
+    consume(TOKEN_LEFT_BRACE, "Expected '{' before class body");
+    consume(TOKEN_RIGHT_BRACE, "Expected '}' after class body");
+
 }
 
 static void statement(){
@@ -540,11 +568,15 @@ static void string(bool can_assign){
 }
 
 
-static void indices(bool can_assign){\
-    UNUSED(can_assign);
+static void indices(bool can_assign){
     expression();
     consume(TOKEN_RIGHT_BRACKET, "Expected ']' after array index");
-    emit_byte(OP_GET_INDEX);
+    if (can_assign && match(TOKEN_EQUAL)){
+        expression(); // new value
+        emit_byte(OP_SET_INDEX);
+    } else {
+        emit_byte(OP_GET_INDEX);
+    }
 }
 
 static void variable(bool can_assign){
@@ -580,7 +612,7 @@ static void variable(bool can_assign){
             emit_bytes(get_op, (uint8_t)arg);
             emit_bytes((uint8_t)(arg >> 8), (uint8_t)(arg >> 16));
         } else if (current_chunk()->constants.count + 1 > UINT8_MAX){
-            emit_bytes(OP_SET_GLOBAL_LONG, (uint8_t)arg);
+            emit_bytes(OP_GET_GLOBAL_LONG, (uint8_t)arg);
             emit_bytes((uint8_t)(arg >> 8), (uint8_t)(arg >> 16));
         } else {
             emit_bytes(get_op, arg);
@@ -704,6 +736,41 @@ static void ternary(bool can_assign){
     patch_jump(end_jmp);
 }
 
+static void dot(bool can_assign){
+    consume(TOKEN_IDENTIFIER, "Expected property name after '.'");
+    Value name = OBJ_VAL(copy_string(parser.previous.start, parser.previous.length));
+
+    if (can_assign && match(TOKEN_EQUAL)){
+        expression();
+        if (current_chunk()->constants.count + 1 > UINT8_MAX){
+            emit_byte(OP_SET_PROP_LONG);
+            write_constant(current_chunk(), name, parser.previous.line);
+        } else {
+            emit_bytes(OP_SET_PROP, add_constant(current_chunk(), name));
+        }
+    } else {
+        if (current_chunk()->constants.count + 1 > UINT8_MAX){
+            emit_byte(OP_GET_PROP_LONG);
+            write_constant(current_chunk(), name, parser.previous.line);
+        } else {
+            emit_bytes(OP_GET_PROP, add_constant(current_chunk(), name));
+        }
+    }
+}
+
+// static void set_index(bool can_assign){
+
+//     expression(); // index value
+//     // a[b] = c;
+//     consume(TOKEN_RIGHT_BRACKET, "Index must be closed with right bracket ']'");
+//     if (can_assign && match(TOKEN_EQUAL)){
+//         expression(); // assignment value
+//         emit_byte(OP_SET_INDEX);
+//     } else {
+//         error("Invalid assignment target TEST");
+//     }
+// }
+
 ParseRule rules[] = { //      prefix     infix     precedence
     [TOKEN_LEFT_PAREN]     = {grouping,  call,     PREC_CALL},    
     [TOKEN_RIGHT_PAREN]    = {NULL,      NULL,     PREC_NONE},    
@@ -712,7 +779,7 @@ ParseRule rules[] = { //      prefix     infix     precedence
     [TOKEN_LEFT_BRACKET]   = {array,     NULL,     PREC_NONE}, 
     [TOKEN_RIGHT_BRACKET]  = {NULL,      NULL,     PREC_NONE},
     [TOKEN_COMMA]          = {NULL,      NULL,     PREC_NONE}, 
-    [TOKEN_DOT]            = {NULL,      NULL,     PREC_NONE}, 
+    [TOKEN_DOT]            = {NULL,      dot,      PREC_CALL}, 
     [TOKEN_MINUS]          = {unary,     binary,   PREC_TERM}, 
     [TOKEN_PLUS]           = {NULL,      binary,   PREC_TERM},
     [TOKEN_SEMICOLON]      = {NULL,      NULL,     PREC_NONE}, 
@@ -769,8 +836,22 @@ ObjFunction* compile(const char* source){
     while(!match(TOKEN_EOF)){
         declaration();
     }
+    
+    
     ObjFunction* function = end_compiler();
     return parser.had_error ? NULL : function;
+}
+
+void mark_compiler_roots(){
+    Compiler* compiler = current;
+    // printf("Compiler pointer: %p\n", compiler);
+    while(compiler != NULL){
+        // printf("Mark compiler roots ");
+        // print_obj(OBJ_VAL(compiler->fn));
+        // printf("\n");
+        mark_object((Obj*)compiler->fn);
+        compiler = compiler->enclosing;
+    }
 }
 
 void print_tokens(Lexer* lexer){

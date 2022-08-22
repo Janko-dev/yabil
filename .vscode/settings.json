@@ -18,6 +18,7 @@
         "chunk.h": "c",
         "object.h": "c",
         "math.h": "c",
-        "typeinfo": "c"
+        "typeinfo": "c",
+        "stdio.h": "c"
     }
 }

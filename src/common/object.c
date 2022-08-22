@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include "../core/memory.h"
 #include "../core/vm.h"
+#include "../core/lexer.h"
 #include "object.h"
 #include "value.h"
 #include "table.h"
@@ -16,13 +17,35 @@ static uint32_t hash_string(const char* key, size_t length){
     return hash;
 }
 
+#ifdef DEBUG_LOG_GC
+const char* obj_type_tostring(ObjType type){
+    switch (type){
+        case OBJ_STRING: return "OBJ_STRING"; 
+        case OBJ_ARRAY: return "OBJ_ARRAY"; 
+        case OBJ_FUNCTION: return "OBJ_FUNCTION"; 
+        case OBJ_NATIVE: return "OBJ_NATIVE"; 
+        case OBJ_CLOSURE: return "OBJ_CLOSURE"; 
+        case OBJ_UPVALUE: return "OBJ_UPVALUE"; 
+        case OBJ_CLASS: return "OBJ_CLASS"; 
+        case OBJ_INSTANCE: return "OBJ_INSTANCE";
+        default: return "";
+    }
+}
+#endif //DEBUG_LOG_GC
+
 static Obj* alloc_obj(size_t size, ObjType type){
     Obj* object  = (Obj*)reallocate(NULL, 0, size);
     object->type = type;
     object->next = vm.objects;
+    object->is_marked = false;
     vm.objects = object;
+#ifdef DEBUG_LOG_GC
+    printf("%p allocate %d bytes for type '%s'\n", (void*)object, size, obj_type_tostring(type));
+#endif //DEBUG_LOG_GC
     return object;
 }
+
+extern Parser parser;
 
 static ObjString* allocate_string(char* chars, size_t length, uint32_t hash){
     ObjString* string = (ObjString*)alloc_obj(sizeof(ObjString) + sizeof(char) * length + 1, OBJ_STRING);
@@ -30,7 +53,9 @@ static ObjString* allocate_string(char* chars, size_t length, uint32_t hash){
     strncpy(string->chars, chars, length);
     string->chars[length] = '\0';
     string->hash = hash;
+    push(OBJ_VAL(string)); // push string on stack so GC doesn't clean
     table_set(&vm.strings, string, NIL_VAL);
+    pop(); // pop string from stack
     return string;
 }
 
@@ -94,6 +119,19 @@ ObjUpvalue* new_upvalue(Value* slot){
     return upval;
 }
 
+ObjClass* new_class(ObjString* name){
+    ObjClass* class_obj = (ObjClass*)alloc_obj(sizeof(ObjClass), OBJ_CLASS);
+    class_obj->name = name;
+    return class_obj;
+}
+
+ObjInstance* new_instance(ObjClass* instance_of){
+    ObjInstance* instance = (ObjInstance*)alloc_obj(sizeof(ObjInstance), OBJ_INSTANCE);
+    instance->instance_of = instance_of;
+    init_table(&instance->fields);
+    return instance;
+}
+
 static void print_function(ObjFunction* fn){
     if (fn->name == NULL) {
         printf("<Script>");
@@ -119,5 +157,7 @@ void print_obj(Value value){
         } break;
         case OBJ_CLOSURE: print_function(AS_CLOSURE(value)->function); break;
         case OBJ_UPVALUE: printf("Upvalue"); break;
+        case OBJ_CLASS: printf("<Class %s>", AS_CLASS(value)->name->chars); break;
+        case OBJ_INSTANCE: printf("<instance of %s>", AS_INSTANCE(value)->instance_of->name->chars); break;
     }
 }

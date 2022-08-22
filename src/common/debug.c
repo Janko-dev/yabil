@@ -54,11 +54,15 @@ static size_t closure_instruction(const char* name, Chunk* chunk, size_t constan
     print_value(chunk->constants.values[constant]);
     printf("\n");
     ObjFunction* fn = AS_FUNCTION(chunk->constants.values[constant]);
+    // printf("\tsizeof upvalues: %d \n", fn->upvalue_count);
     for (size_t i = 0; i < fn->upvalue_count; i++){
         int is_local = chunk->code[offset++];
-        int index = chunk->code[offset++];
+        size_t index = chunk->code[offset] |
+                       chunk->code[offset + 1] << 8 |
+                       chunk->code[offset + 2] << 16;
+        offset += 3;
         printf("%04d    |                     %s %d\n", 
-                offset - 4, is_local ? "local" : "upvalue", index);
+                offset, is_local ? "local" : "upvalue", index);
     } 
     return offset;
 }
@@ -109,6 +113,7 @@ size_t disassemble_instruction(Chunk* chunk, size_t offset){
         case OP_ARRAY:                      return constant_instruction("OP_ARRAY", chunk, offset); 
         case OP_ARRAY_LONG:                 return long_instruction("OP_ARRAY_LONG", chunk, offset);
         case OP_GET_INDEX:                  return simple_instruction("OP_GET_INDEX", offset);
+        case OP_SET_INDEX:                  return simple_instruction("OP_SET_INDEX", offset);
         case OP_JUMP_IF_FALSE:              return jump_instruction("OP_JUMP_IF_FALSE", 1, chunk, offset);
         case OP_JUMP:                       return jump_instruction("OP_JUMP", 1, chunk, offset);
         case OP_LOOP:                       return jump_instruction("OP_LOOP", -1, chunk, offset);
@@ -127,6 +132,7 @@ size_t disassemble_instruction(Chunk* chunk, size_t offset){
             offset+=3;
             return closure_instruction("OP_CLOSURE_LONG", chunk, constant, offset);
         }
+        case OP_CLASS:                      return constant_instruction("OP_CLASS", chunk, offset);
         default:
             printf("Unknown opcode %d\n", ins);
             return offset+1;
