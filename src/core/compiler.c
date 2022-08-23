@@ -14,6 +14,7 @@
 Lexer lexer;
 Parser parser;
 Compiler* current = NULL;
+ClassCompiler* current_class = NULL;
 
 static ParseRule* get_rule(TokenType type);
 static void declaration();
@@ -30,6 +31,7 @@ static void expression_statement();
 static void return_statement();
 
 static void expression();
+static void named_variable(Token name, bool can_assign);
 static void parse_precedence(Precedence prec);
 
 static void init_compiler(Compiler* compiler, FunctionType type){
@@ -39,7 +41,6 @@ static void init_compiler(Compiler* compiler, FunctionType type){
     compiler->local_count = 0;
     compiler->scope_depth = 0;
     compiler->fn = new_function();
-    // push(OBJ_VAL(compiler->fn));
     current = compiler;
     if (type != TYPE_SCRIPT){
         current->fn->name = copy_string(parser.previous.start, parser.previous.length);
@@ -48,8 +49,13 @@ static void init_compiler(Compiler* compiler, FunctionType type){
     Local* local = &current->locals[current->local_count++];
     local->depth = 0;
     local->is_captured = false;
-    local->name.start = "";
-    local->name.length = 0;
+    if (type != TYPE_FUNCTION){
+        local->name.start = "this";
+        local->name.length = 4;
+    } else {
+        local->name.start = "";
+        local->name.length = 0;
+    }
 }
 
 static size_t get_column(Token* token){
@@ -119,7 +125,12 @@ static void emit_bytes(uint8_t byte1, uint8_t byte2){
 }
 
 static void emit_return(){
-    emit_byte(OP_NIL);
+    if (current->type == TYPE_INITIALIZER){
+        emit_bytes(OP_GET_LOCAL, 0);
+        emit_bytes(0, 0);
+    } else {
+        emit_byte(OP_NIL);
+    }
     emit_byte(OP_RETURN);
 }
 
@@ -388,7 +399,6 @@ static void function_declaration(){
         return;
     }
     
-    
     if (current_chunk()->constants.count + 1 > UINT8_MAX){
         emit_byte(OP_DEFINE_GLOBAL_LONG);
         write_constant(current_chunk(), value, parser.previous.line);
@@ -398,17 +408,40 @@ static void function_declaration(){
     pop();
 }
 
+static void method(){
+    consume(TOKEN_IDENTIFIER, "Expected method name");
+    Value name = OBJ_VAL(copy_string(parser.previous.start, parser.previous.length));
+    uint16_t constant = add_constant(current_chunk(), name);
+    FunctionType type = TYPE_METHOD;
+    if (parser.previous.length == 4 && memcmp(parser.previous.start, "init", 4) == 0){
+        type = TYPE_INITIALIZER;
+    }
+    function(type);
+    emit_bytes(OP_METHOD, constant);
+}
+
 static void class_declaration(){
     consume(TOKEN_IDENTIFIER, "Expected class name");
+    Token class_name = parser.previous;
     Value name = OBJ_VAL(copy_string(parser.previous.start, parser.previous.length));
     declare_var();
 
     emit_bytes(OP_CLASS, add_constant(current_chunk(), name));
     define_var(name);
 
-    consume(TOKEN_LEFT_BRACE, "Expected '{' before class body");
-    consume(TOKEN_RIGHT_BRACE, "Expected '}' after class body");
+    ClassCompiler class_compiler;
+    class_compiler.enclosing = current_class;
+    current_class = &class_compiler;
 
+    named_variable(class_name, false);
+    consume(TOKEN_LEFT_BRACE, "Expected '{' before class body");
+    while(parser.current.type != TOKEN_RIGHT_BRACE && parser.current.type != TOKEN_EOF){
+        method();
+    }
+    consume(TOKEN_RIGHT_BRACE, "Expected '}' after class body");
+    emit_byte(OP_POP);
+
+    current_class = current_class->enclosing;
 }
 
 static void statement(){
@@ -525,6 +558,9 @@ static void return_statement(){
     if (match(TOKEN_SEMICOLON)){
         emit_return();
     } else {
+        if (current->type == TYPE_INITIALIZER){
+            error("Can't return a value from an initializer");
+        }
         expression();
         consume(TOKEN_SEMICOLON, "Expected ';' after return statement");
         emit_byte(OP_RETURN);
@@ -579,18 +615,18 @@ static void indices(bool can_assign){
     }
 }
 
-static void variable(bool can_assign){
-    
+static void named_variable(Token name, bool can_assign){
+
     uint8_t get_op, set_op;
-    int32_t arg = resolve_local(current, &parser.previous);
+    int32_t arg = resolve_local(current, &name);
     if (arg != -1){
         get_op = OP_GET_LOCAL;
         set_op = OP_SET_LOCAL;
-    } else if ((arg = resolve_upvalue(current, &parser.previous)) != -1){
+    } else if ((arg = resolve_upvalue(current, &name)) != -1){
         get_op = OP_GET_UPVALUE;
         set_op = OP_SET_UPVALUE;
     } else {
-        Value value = OBJ_VAL(copy_string(parser.previous.start, parser.previous.length));
+        Value value = OBJ_VAL(copy_string(name.start, name.length));
         arg = add_constant(current_chunk(), value);
         get_op = OP_GET_GLOBAL;
         set_op = OP_SET_GLOBAL;
@@ -621,7 +657,10 @@ static void variable(bool can_assign){
             indices(can_assign);
         }
     }
+}
 
+static void variable(bool can_assign){
+    named_variable(parser.previous, can_assign);
 }
 
 static void grouping(bool can_assign){
@@ -749,6 +788,10 @@ static void dot(bool can_assign){
         } else {
             emit_bytes(OP_SET_PROP, add_constant(current_chunk(), name));
         }
+    } else if (match(TOKEN_LEFT_PAREN)) {
+        uint8_t args = argument_list();
+        emit_bytes(OP_INVOKE, add_constant(current_chunk(), name));
+        emit_byte(args);
     } else {
         if (current_chunk()->constants.count + 1 > UINT8_MAX){
             emit_byte(OP_GET_PROP_LONG);
@@ -763,18 +806,14 @@ static void dot(bool can_assign){
     pop();
 }
 
-// static void set_index(bool can_assign){
-
-//     expression(); // index value
-//     // a[b] = c;
-//     consume(TOKEN_RIGHT_BRACKET, "Index must be closed with right bracket ']'");
-//     if (can_assign && match(TOKEN_EQUAL)){
-//         expression(); // assignment value
-//         emit_byte(OP_SET_INDEX);
-//     } else {
-//         error("Invalid assignment target TEST");
-//     }
-// }
+static void this_(bool can_assign){
+    UNUSED(can_assign);
+    if (current_class == NULL){
+        error("Can't use 'this' outside of a class");
+        return;
+    }
+    variable(false);
+}
 
 ParseRule rules[] = { //      prefix     infix     precedence
     [TOKEN_LEFT_PAREN]     = {grouping,  call,     PREC_CALL},    
@@ -818,7 +857,7 @@ ParseRule rules[] = { //      prefix     infix     precedence
     [TOKEN_RETURN]         = {NULL,      NULL,     PREC_NONE}, 
     [TOKEN_CLASS]          = {NULL,      NULL,     PREC_NONE}, 
     [TOKEN_SUPER]          = {NULL,      NULL,     PREC_NONE}, 
-    [TOKEN_THIS]           = {NULL,      NULL,     PREC_NONE}, 
+    [TOKEN_THIS]           = {this_,     NULL,     PREC_NONE}, 
     [TOKEN_VAR]            = {NULL,      NULL,     PREC_NONE},
     [TOKEN_ERROR]          = {NULL,      NULL,     PREC_NONE}, 
     [TOKEN_EOF]            = {NULL,      NULL,     PREC_NONE}, 

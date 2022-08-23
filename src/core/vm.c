@@ -79,6 +79,9 @@ void init_VM(){
     init_table(&vm.globals);
     init_table(&vm.strings);
 
+    // vm.init_string = NULL;
+    // vm.init_string = copy_string("init", 4);
+
     define_native("clock", native_clock, 0);
     define_native("sqrt", native_sqrt, 1);
     define_native("input", native_stdin, 0);
@@ -88,6 +91,7 @@ void init_VM(){
 void free_VM(){
     free_table(&vm.globals);
     free_table(&vm.strings);
+    // vm.init_string = NULL;
     free_objects();
 }
 
@@ -250,13 +254,41 @@ static bool call_value(Value callee, uint8_t arg_count){
             case OBJ_CLASS: {
                 ObjClass* class_obj = AS_CLASS(callee);
                 vm.sp[-arg_count - 1] = OBJ_VAL(new_instance(class_obj));
+                
+                if (class_obj->init != NULL){
+                    return call(class_obj->init, arg_count);
+                } else if (arg_count != 0){
+                    run_time_error("Expected 0 arguments but got %d arguments", arg_count);
+                    return false;
+                }
+                // Value initializer;
+                // if (table_get(&class_obj->methods, vm.init_string, &initializer)){
+                //     return call(AS_CLOSURE(initializer), arg_count);
+                // } else if (arg_count != 0){
+                //     run_time_error("Expected 0 arguments but got %d arguments", arg_count);
+                //     return false;
+                // }
                 return true;
             } break;
+            case OBJ_BOUND_METHOD: {
+                ObjBoundMethod* bound = AS_BOUND(callee);
+                vm.sp[-arg_count - 1] = bound->receiver;
+                return call(bound->method, arg_count);
+            }
             default: break;
         }
     }
     run_time_error("Can only call functions and classes");
     return false;
+}
+
+static bool invoke_from_class(ObjClass* class_obj, ObjString* name, size_t arg_count){
+    Value method;
+    if (!table_get(&class_obj->methods, name, &method)){
+        run_time_error("Undefined property '%s'", name->chars);
+        return false;
+    }
+    return call(AS_CLOSURE(method), arg_count);
 }
 
 static ObjUpvalue* capture_upvalue(Value* local){
@@ -288,6 +320,44 @@ static void close_upvalues(Value* last){
         upvalue->location = &upvalue->closed;
         vm.open_upvalues = upvalue->next;
     }
+}
+
+static void define_method(ObjString* name){
+    Value method = peek(0);
+    ObjClass* class_obj = AS_CLASS(peek(1));
+    if (name->length == 4 && memcmp(name->chars, "init", 4) == 0){
+        class_obj->init = AS_CLOSURE(method);
+    } else {
+        table_set(&class_obj->methods, name, method);
+    }
+    pop();
+}
+
+static bool bind_method(ObjClass* class_obj, ObjString* name){
+    Value method;
+    if (!table_get(&class_obj->methods, name, &method)){
+        run_time_error("Undefined property '%s'", name->chars);
+        return false;
+    }
+    ObjBoundMethod* bound = new_bound_method(peek(0), AS_CLOSURE(method));
+    pop();
+    push(OBJ_VAL(bound));
+    return true;
+}
+
+static bool invoke(ObjString* name, size_t arg_count){
+    Value receiver = peek(arg_count);
+    if (!IS_INSTANCE(receiver)){
+        run_time_error("Only instances have methods");
+        return false;
+    }
+    ObjInstance* instance = AS_INSTANCE(receiver);
+    Value value;
+    if (table_get(&instance->fields, name, &value)){
+        vm.sp[-arg_count-1] = value;
+        return call_value(value, arg_count);
+    }
+    return invoke_from_class(instance->instance_of, name, arg_count);
 }
 
 #define MODULO_OP()                                                 \
@@ -590,7 +660,6 @@ static InterpreterResult run(){
                 run_time_error("Undefined indexing operation");
                 return INTERPRET_RUNTIME_ERR;
             }
-           
         } NEXT();
         op_jump:; {
             size_t jmp_amt = READ_3_BYTES();
@@ -651,7 +720,14 @@ static InterpreterResult run(){
             close_upvalues(vm.sp - 1);
             pop();
         } NEXT();
-        op_class:; push(OBJ_VAL(new_class(AS_STRING(READ_CONSTANT(READ_BYTE()))))); NEXT();
+        op_class:; {
+            ObjClass* class_obj = new_class(AS_STRING(READ_CONSTANT(READ_BYTE())));  
+            push(OBJ_VAL(class_obj));
+            
+        } NEXT();
+        op_method:; {
+            define_method(AS_STRING(READ_CONSTANT(READ_BYTE())));
+        } NEXT();
         op_get_prop:;{
             if (!IS_INSTANCE(peek(0))){
                 run_time_error("Only instances have properties");
@@ -663,8 +739,7 @@ static InterpreterResult run(){
             if (table_get(&instance->fields, name, &value)){
                 pop();
                 push(value);
-            } else {
-                run_time_error("Undefined property '%s'", name->chars);
+            } else if (!bind_method(instance->instance_of, name)){
                 return INTERPRET_RUNTIME_ERR;
             }
         } NEXT();
@@ -709,6 +784,14 @@ static InterpreterResult run(){
             Value value = pop();
             pop();
             push(value);
+        } NEXT();
+        op_invoke:;{
+            ObjString* method = AS_STRING(READ_CONSTANT(READ_BYTE()));
+            size_t arg_count = READ_BYTE();
+            if (!invoke(method, arg_count)){
+                return INTERPRET_RUNTIME_ERR;
+            }
+            frame = &vm.frames[vm.frame_count - 1];
         } NEXT();
     }
     #undef READ_BYTE

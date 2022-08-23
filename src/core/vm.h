@@ -34,7 +34,8 @@ typedef struct {
     size_t gray_cap;                  // capacity of gray colored object nodes
     Obj** gray_stack;                 // stack of gray colored object nodes used by GC
     size_t bytes_allocated;           // total of bytes that the VM has allocated
-    size_t next_GC;                   // threshold to trigger next GC run     
+    size_t next_GC;                   // threshold to trigger next GC run    
+    // ObjString* init_string; 
 } VM;
 
 extern VM vm;

@@ -23,6 +23,15 @@ static size_t constant_instruction(const char* name, Chunk* chunk, size_t offset
     return offset+2;
 }
 
+static size_t invoke_instruction(const char* name, Chunk* chunk, size_t offset){
+    uint8_t constant = chunk->code[offset+1];
+    uint8_t arg_count = chunk->code[offset+2];
+    printf("%-16s (%d args) %4d '", name, arg_count, constant);
+    print_value(chunk->constants.values[constant]);
+    printf("'\n");
+    return offset+3;
+}
+
 static size_t constant_long_instruction(const char* name, Chunk* chunk, size_t offset){
     size_t const_index = chunk->code[offset+1] |
                          chunk->code[offset+2] << 8 |
@@ -137,6 +146,8 @@ size_t disassemble_instruction(Chunk* chunk, size_t offset){
             return closure_instruction("OP_CLOSURE_LONG", chunk, constant, offset);
         }
         case OP_CLASS:                      return constant_instruction("OP_CLASS", chunk, offset);
+        case OP_METHOD:                     return constant_instruction("OP_METHOD", chunk, offset);
+        case OP_INVOKE:                     return invoke_instruction("OP_INVOKE", chunk, offset);
         default:
             printf("Unknown opcode %d\n", ins);
             return offset+1;

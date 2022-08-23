@@ -22,6 +22,8 @@ typedef enum {
 
 typedef enum {
     TYPE_FUNCTION,
+    TYPE_METHOD,
+    TYPE_INITIALIZER,
     TYPE_SCRIPT,
 } FunctionType;
 
@@ -43,7 +45,6 @@ typedef struct {
     bool is_local;
 } Upvalue;
 
-
 typedef struct Compiler Compiler;
 struct Compiler {
     struct Compiler* enclosing;
@@ -54,6 +55,10 @@ struct Compiler {
     int32_t scope_depth;
     Upvalue upvalues[UINT24_COUNT];
 };
+
+typedef struct ClassCompiler {
+    struct ClassCompiler* enclosing;
+} ClassCompiler;
 
 ObjFunction* compile(const char* source);
 void mark_compiler_roots();

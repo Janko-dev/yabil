@@ -122,6 +122,8 @@ ObjUpvalue* new_upvalue(Value* slot){
 ObjClass* new_class(ObjString* name){
     ObjClass* class_obj = (ObjClass*)alloc_obj(sizeof(ObjClass), OBJ_CLASS);
     class_obj->name = name;
+    class_obj->init = NULL;
+    init_table(&class_obj->methods);
     return class_obj;
 }
 
@@ -130,6 +132,13 @@ ObjInstance* new_instance(ObjClass* instance_of){
     instance->instance_of = instance_of;
     init_table(&instance->fields);
     return instance;
+}
+
+ObjBoundMethod* new_bound_method(Value receiver, ObjClosure* method){
+    ObjBoundMethod* bound = (ObjBoundMethod*)alloc_obj(sizeof(ObjBoundMethod), OBJ_BOUND_METHOD);
+    bound->receiver = receiver;
+    bound->method = method;
+    return bound;
 }
 
 static void print_function(ObjFunction* fn){
@@ -159,5 +168,6 @@ void print_obj(Value value){
         case OBJ_UPVALUE: printf("Upvalue"); break;
         case OBJ_CLASS: printf("<Class %s>", AS_CLASS(value)->name->chars); break;
         case OBJ_INSTANCE: printf("<instance of %s>", AS_INSTANCE(value)->instance_of->name->chars); break;
+        case OBJ_BOUND_METHOD: print_function(AS_BOUND(value)->method->function); break;
     }
 }
