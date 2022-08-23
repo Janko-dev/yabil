@@ -739,6 +739,7 @@ static void ternary(bool can_assign){
 static void dot(bool can_assign){
     consume(TOKEN_IDENTIFIER, "Expected property name after '.'");
     Value name = OBJ_VAL(copy_string(parser.previous.start, parser.previous.length));
+    push(name);
 
     if (can_assign && match(TOKEN_EQUAL)){
         expression();
@@ -755,7 +756,11 @@ static void dot(bool can_assign){
         } else {
             emit_bytes(OP_GET_PROP, add_constant(current_chunk(), name));
         }
+        while (match(TOKEN_LEFT_BRACKET)){
+            indices(can_assign);
+        }
     }
+    pop();
 }
 
 // static void set_index(bool can_assign){

@@ -108,6 +108,10 @@ size_t disassemble_instruction(Chunk* chunk, size_t offset){
         case OP_SET_GLOBAL_LONG:            return long_instruction("OP_SET_GLOBAL_LONG", chunk, offset);
         case OP_GET_LOCAL:                  return long_instruction("OP_GET_LOCAL", chunk, offset); 
         case OP_SET_LOCAL:                  return long_instruction("OP_SET_LOCAL", chunk, offset);
+        case OP_GET_PROP:                   return constant_instruction("OP_GET_PROP", chunk, offset); 
+        case OP_GET_PROP_LONG:              return long_instruction("OP_GET_PROP_LONG", chunk, offset); 
+        case OP_SET_PROP:                   return constant_instruction("OP_SET_PROP", chunk, offset);
+        case OP_SET_PROP_LONG:              return long_instruction("OP_SET_PROP_LONG", chunk, offset);
         case OP_GET_UPVALUE:                return long_instruction("OP_GET_UPVALUE", chunk, offset); 
         case OP_SET_UPVALUE:                return long_instruction("OP_SET_UPVALUE", chunk, offset);
         case OP_ARRAY:                      return constant_instruction("OP_ARRAY", chunk, offset); 

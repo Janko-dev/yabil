@@ -1,0 +1,32 @@
+class Box { }
+class Rect { }
+class Vec { }
+
+fun area(r){
+    fun abs(n) { return n < 0 ? -n : n; }
+    var x = abs(r.lt.x - r.rb.x);
+    var y = abs(r.lt.y - r.rb.y);
+    return x * y;
+}
+
+var b = Box();
+b.rects = [];
+for (var i = 0; i < 6; i=i+1){
+    var r = Rect();
+    r.lt = Vec();
+    r.lt.x = 10;
+    r.lt.y = 20;
+    
+    r.rb = Vec();
+    r.rb.x = 40;
+    r.rb.y = 90;
+    
+    b.rects = b.rects + r;
+}
+
+var a = 0;
+for (var i = 0; i < len(b.rects); i=i+1){
+    a = a + area(b.rects[i]);
+}
+
+print a;

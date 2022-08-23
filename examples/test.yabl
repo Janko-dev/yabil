@@ -1,12 +1,15 @@
-fun makecounter(){
-    var i = 0;
-    fun count(){
-        i = i + 1;
-        return i;
-    }
-    return count; 
-}
+class Vec { }
 
-var counter = makecounter();
-print counter();
-print counter();
+var v = Vec();
+v["x"] = Vec();
+v["x"]["y"] = 20;
+
+print v["x"].y;
+
+var w = [1, 20, 30];
+w[1] = "hi";
+print w;
+
+var s = "wow";
+s[1] = "w";
+print s;

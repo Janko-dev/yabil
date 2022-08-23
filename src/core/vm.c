@@ -428,11 +428,6 @@ static InterpreterResult run(){
         } NEXT();
         op_define_global:; {
             ObjString* name = AS_STRING(READ_CONSTANT(READ_BYTE()));
-            // printf("DEBUG:\n");
-            // print_value_array(&frame->closure->function->chunk.constants);
-            // printf("\n");
-            // print_obj(OBJ_VAL(name));
-            // printf("\n");
             push(OBJ_VAL(name));
             table_set(&vm.globals, name, peek(1));
             pop();
@@ -529,38 +524,73 @@ static InterpreterResult run(){
             frame->ip+=3;
         } NEXT();
         op_get_index:;{
-            if (!IS_NUM(peek(0)) && rintf(peek(0).as.number) == peek(0).as.number){
-                run_time_error("Index must be an integer number");
+            if (IS_NUM(peek(0))) {
+                if (rintf(peek(0).as.number) != peek(0).as.number){
+                    run_time_error("Index must evaluate to integer number");
+                    return INTERPRET_RUNTIME_ERR;
+                }
+                if (!IS_ARRAY(peek(1)) && !IS_STRING(peek(1))){
+                    run_time_error("Can only index into Array object or String literal");
+                    return INTERPRET_RUNTIME_ERR;
+                }
+                Value index = pop();
+                Value array = pop();
+                if (IS_ARRAY(array)) push(AS_ARRAY(array)->elements.values[(size_t)index.as.number % AS_ARRAY(array)->elements.count]);
+                else push(OBJ_VAL(copy_string(AS_CSTRING(array) + (int)index.as.number, 1))); 
+            } else if (IS_STRING(peek(0))){
+                if (!IS_INSTANCE(peek(1))){
+                    run_time_error("Can only get field of instance");
+                    return INTERPRET_RUNTIME_ERR;
+                }
+                ObjString* index_str = AS_STRING(pop());
+                ObjInstance* instance = AS_INSTANCE(pop());
+                Value val;
+                if (table_get(&instance->fields, index_str, &val)){
+                    push(val);
+                } else {
+                    run_time_error("Undefined property '%s'", index_str->chars);
+                    return INTERPRET_RUNTIME_ERR;
+                }
+            } else {
+                run_time_error("Undefined indexing operation");
                 return INTERPRET_RUNTIME_ERR;
             }
-            if (!IS_ARRAY(peek(1)) && !IS_STRING(peek(1))){
-                run_time_error("Can only index into Array object or String");
-                return INTERPRET_RUNTIME_ERR;
-            }
-            Value index = pop();
-            Value array = pop();
-            if (IS_ARRAY(array)) push(AS_ARRAY(array)->elements.values[(size_t)index.as.number % AS_ARRAY(array)->elements.count]);
-            else push(OBJ_VAL(copy_string(AS_CSTRING(array) + (int)index.as.number, 1)));
         } NEXT();
         op_set_index:;{
-            if (!IS_NUM(peek(1)) && rintf(peek(1).as.number) == peek(1).as.number){
-                run_time_error("Index must be an integer number");
-                return INTERPRET_RUNTIME_ERR;
-            }
-            if (!IS_ARRAY(peek(2)) && !IS_STRING(peek(2))){
-                run_time_error("Can only index into Array object or String");
-                return INTERPRET_RUNTIME_ERR;
-            }
-            Value new_val = pop();
-            Value index = pop();
-            if (IS_ARRAY(peek(0))){
-                AS_ARRAY(peek(0))->elements.values[(size_t)index.as.number % AS_ARRAY(peek(0))->elements.count] = new_val;
-            } else if (IS_STRING(new_val) && AS_STRING(new_val)->length == 1){
-                AS_CSTRING(peek(0))[(size_t)index.as.number % AS_STRING(peek(0))->length] = AS_CSTRING(new_val)[0];
+            if (IS_NUM(peek(1))) {
+                if (rintf(peek(1).as.number) != peek(1).as.number){
+                    run_time_error("Index must evaluate to integer number");
+                    return INTERPRET_RUNTIME_ERR;
+                }
+                if (!IS_ARRAY(peek(2)) && !IS_STRING(peek(2))){
+                    run_time_error("Can only index into Array object or String literal");
+                    return INTERPRET_RUNTIME_ERR;
+                }
+                Value new_val = pop();
+                Value index = pop();
+                if (IS_ARRAY(peek(0))){
+                    AS_ARRAY(peek(0))->elements.values[(size_t)index.as.number % AS_ARRAY(peek(0))->elements.count] = new_val;
+                } else if (IS_STRING(new_val) && AS_STRING(new_val)->length == 1){
+                    AS_CSTRING(peek(0))[(size_t)index.as.number % AS_STRING(peek(0))->length] = AS_CSTRING(new_val)[0];
+                } else {
+                    run_time_error("Can only assign characters to indices of strings");
+                    return INTERPRET_RUNTIME_ERR;
+                }
+            } else if (IS_STRING(peek(1))){
+                if (!IS_INSTANCE(peek(2))){
+                    run_time_error("Can only set field of instance");
+                    return INTERPRET_RUNTIME_ERR;
+                }
+                table_set(&AS_INSTANCE(peek(2))->fields, AS_STRING(peek(1)), peek(0));
+                Value new_val = pop();
+                pop();
+                pop();
+                push(new_val);
             } else {
-                run_time_error("Can only assign characters to indices of strings");
+                run_time_error("Undefined indexing operation");
                 return INTERPRET_RUNTIME_ERR;
             }
+           
         } NEXT();
         op_jump:; {
             size_t jmp_amt = READ_3_BYTES();
@@ -623,16 +653,62 @@ static InterpreterResult run(){
         } NEXT();
         op_class:; push(OBJ_VAL(new_class(AS_STRING(READ_CONSTANT(READ_BYTE()))))); NEXT();
         op_get_prop:;{
-
+            if (!IS_INSTANCE(peek(0))){
+                run_time_error("Only instances have properties");
+                return INTERPRET_RUNTIME_ERR;
+            }
+            ObjInstance* instance = AS_INSTANCE(peek(0));
+            ObjString* name = AS_STRING(READ_CONSTANT(READ_BYTE()));
+            Value value;
+            if (table_get(&instance->fields, name, &value)){
+                pop();
+                push(value);
+            } else {
+                run_time_error("Undefined property '%s'", name->chars);
+                return INTERPRET_RUNTIME_ERR;
+            }
         } NEXT();
         op_get_prop_long:;{
-
+            if (!IS_INSTANCE(peek(0))){
+                run_time_error("Only instances have properties");
+                return INTERPRET_RUNTIME_ERR;
+            }
+            ObjInstance* instance = AS_INSTANCE(peek(0));
+            ObjString* name = AS_STRING(READ_CONSTANT(READ_3_BYTES()));
+            frame->ip+=3;
+            Value value;
+            if (table_get(&instance->fields, name, &value)){
+                pop();
+                push(value);
+            } else {
+                run_time_error("Undefined property '%s'", name->chars);
+                return INTERPRET_RUNTIME_ERR;
+            }
         } NEXT();
         op_set_prop:;{
-
+            if (!IS_INSTANCE(peek(1))){
+                run_time_error("Only properties of instances can be set to a value");
+                return INTERPRET_RUNTIME_ERR;
+            }
+            ObjInstance* instance = AS_INSTANCE(peek(1));
+            ObjString* name = AS_STRING(READ_CONSTANT(READ_BYTE()));
+            table_set(&instance->fields, name, peek(0));
+            Value value = pop();
+            pop();
+            push(value);
         } NEXT();
         op_set_prop_long:;{
-
+            if (!IS_INSTANCE(peek(1))){
+                run_time_error("Only properties of instances can be set to a value");
+                return INTERPRET_RUNTIME_ERR;
+            }
+            ObjInstance* instance = AS_INSTANCE(peek(1));
+            ObjString* name = AS_STRING(READ_CONSTANT(READ_3_BYTES()));
+            frame->ip+=3;
+            table_set(&instance->fields, name, peek(0));
+            Value value = pop();
+            pop();
+            push(value);
         } NEXT();
     }
     #undef READ_BYTE
