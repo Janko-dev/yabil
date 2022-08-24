@@ -283,6 +283,10 @@ static bool call_value(Value callee, uint8_t arg_count){
 }
 
 static bool invoke_from_class(ObjClass* class_obj, ObjString* name, size_t arg_count){
+    if (class_obj->init != NULL && class_obj->init->function->name == name){
+        return call(class_obj->init, arg_count);
+    }
+    
     Value method;
     if (!table_get(&class_obj->methods, name, &method)){
         run_time_error("Undefined property '%s'", name->chars);
@@ -789,6 +793,32 @@ static InterpreterResult run(){
             ObjString* method = AS_STRING(READ_CONSTANT(READ_BYTE()));
             size_t arg_count = READ_BYTE();
             if (!invoke(method, arg_count)){
+                return INTERPRET_RUNTIME_ERR;
+            }
+            frame = &vm.frames[vm.frame_count - 1];
+        } NEXT();
+        op_inherit:;{
+            Value superclass = peek(1);
+            if (!IS_CLASS(superclass)){
+                run_time_error("Can only inherit from another class");
+                return INTERPRET_RUNTIME_ERR;
+            }
+            ObjClass* subclass = AS_CLASS(peek(0));
+            table_add_all(&AS_CLASS(superclass)->methods, &subclass->methods);
+            pop();
+        } NEXT();
+        op_get_super:;{
+            ObjString* name = AS_STRING(READ_CONSTANT(READ_BYTE()));
+            ObjClass* super_class = AS_CLASS(pop());
+            if (!bind_method(super_class, name)){
+                return INTERPRET_RUNTIME_ERR;
+            }
+        } NEXT();
+        op_super_invoke:;{
+            ObjString* method = AS_STRING(READ_CONSTANT(READ_BYTE()));
+            size_t arg_count = READ_BYTE();
+            ObjClass* super_class = AS_CLASS(pop());
+            if (!invoke_from_class(super_class, method, arg_count)){
                 return INTERPRET_RUNTIME_ERR;
             }
             frame = &vm.frames[vm.frame_count - 1];

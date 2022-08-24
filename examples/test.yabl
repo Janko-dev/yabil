@@ -1,19 +1,29 @@
-class Vec { 
-    init(x, y){
-        this.x = x;
-        this.y = y;
-    }
-
-    sum(){
-        return this.x + this.y;
-    }
-
-    add(vec){
-        return Vec(this.x + vec.x, this.y + vec.y);
+class Obj {
+    init(name){
+        this.name = name;
     }
 }
 
-var p = Vec(2, 6);
-var q = Vec(10, -3);
+class Person < Obj {
+    init(name){
+        super.init(name);
+    }
 
-print Vec(p.add(q).add(Vec(10, 20)).sum(), Vec(2, 3).sum()).sum();
+    speak(){
+        print "hello";
+    }
+}
+
+class Jan < Person{
+    init(){
+        super.init("Jan");
+    }
+
+    speak(){
+        super.speak();
+        print "I am " + this.name;
+    }
+}
+
+var j = Jan();
+j.speak();

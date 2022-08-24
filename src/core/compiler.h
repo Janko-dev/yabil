@@ -58,6 +58,7 @@ struct Compiler {
 
 typedef struct ClassCompiler {
     struct ClassCompiler* enclosing;
+    bool has_super;
 } ClassCompiler;
 
 ObjFunction* compile(const char* source);

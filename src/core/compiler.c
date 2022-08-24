@@ -31,6 +31,7 @@ static void expression_statement();
 static void return_statement();
 
 static void expression();
+static void variable(bool can_assign);
 static void named_variable(Token name, bool can_assign);
 static void parse_precedence(Precedence prec);
 
@@ -420,6 +421,13 @@ static void method(){
     emit_bytes(OP_METHOD, constant);
 }
 
+static Token synthetic_token(const char* text){
+    return (Token){
+        .start = text,
+        .length = strlen(text),
+    };
+}
+
 static void class_declaration(){
     consume(TOKEN_IDENTIFIER, "Expected class name");
     Token class_name = parser.previous;
@@ -430,8 +438,24 @@ static void class_declaration(){
     define_var(name);
 
     ClassCompiler class_compiler;
+    class_compiler.has_super = false;
     class_compiler.enclosing = current_class;
     current_class = &class_compiler;
+
+    if (match(TOKEN_LESS)){
+        consume(TOKEN_IDENTIFIER, "Expected superclass name");
+        variable(false);
+        if (identifiers_equal(&class_name, &parser.previous)){
+            error("A class can't inherit from itself");
+        }
+        begin_scope();
+        add_local(synthetic_token("super"));
+        define_var((Value){});
+
+        named_variable(class_name, false);
+        emit_byte(OP_INHERIT);
+        class_compiler.has_super = true;
+    }
 
     named_variable(class_name, false);
     consume(TOKEN_LEFT_BRACE, "Expected '{' before class body");
@@ -440,6 +464,10 @@ static void class_declaration(){
     }
     consume(TOKEN_RIGHT_BRACE, "Expected '}' after class body");
     emit_byte(OP_POP);
+
+    if (class_compiler.has_super){
+        end_scope();
+    }
 
     current_class = current_class->enclosing;
 }
@@ -815,6 +843,30 @@ static void this_(bool can_assign){
     variable(false);
 }
 
+static void super_(bool can_assign){
+    UNUSED(can_assign);
+    if (current_class == NULL){
+        error("Can't use 'super' outside of a class");
+    } else if (!current_class->has_super){
+        error("Can't use 'super' in a class with no superclass");
+    }
+
+    consume(TOKEN_DOT, "Expected '.' after 'super' keyword");
+    consume(TOKEN_IDENTIFIER, "Expected superclass method name");
+    size_t name = add_constant(current_chunk(), OBJ_VAL(copy_string(parser.previous.start, parser.previous.length)));
+    named_variable(synthetic_token("this"), false);
+    
+    if (match(TOKEN_LEFT_PAREN)){
+        uint8_t args = argument_list();
+        named_variable(synthetic_token("super"), false);
+        emit_bytes(OP_SUPER_INVOKE, name);
+        emit_byte(args);
+    } else {
+        named_variable(synthetic_token("super"), false);
+        emit_bytes(OP_GET_SUPER, name);
+    }
+}
+
 ParseRule rules[] = { //      prefix     infix     precedence
     [TOKEN_LEFT_PAREN]     = {grouping,  call,     PREC_CALL},    
     [TOKEN_RIGHT_PAREN]    = {NULL,      NULL,     PREC_NONE},    
@@ -856,7 +908,7 @@ ParseRule rules[] = { //      prefix     infix     precedence
     [TOKEN_FUN]            = {NULL,      NULL,     PREC_NONE}, 
     [TOKEN_RETURN]         = {NULL,      NULL,     PREC_NONE}, 
     [TOKEN_CLASS]          = {NULL,      NULL,     PREC_NONE}, 
-    [TOKEN_SUPER]          = {NULL,      NULL,     PREC_NONE}, 
+    [TOKEN_SUPER]          = {super_,    NULL,     PREC_NONE}, 
     [TOKEN_THIS]           = {this_,     NULL,     PREC_NONE}, 
     [TOKEN_VAR]            = {NULL,      NULL,     PREC_NONE},
     [TOKEN_ERROR]          = {NULL,      NULL,     PREC_NONE}, 
