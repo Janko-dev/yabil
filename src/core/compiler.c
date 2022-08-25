@@ -450,7 +450,11 @@ static void class_declaration(){
         }
         begin_scope();
         add_local(synthetic_token("super"));
+#ifdef NAN_BOXING
+        define_var(0);
+#else
         define_var((Value){});
+#endif
 
         named_variable(class_name, false);
         emit_byte(OP_INHERIT);

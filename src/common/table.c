@@ -19,7 +19,7 @@ void free_table(Table* table){
 }
 
 static Entry* find_entry(Entry* entries, size_t cap, ObjString* key){
-    uint32_t index = key->hash % cap;
+    uint32_t index = key->hash & (cap-1);
     Entry* tombstone = NULL;
     while(1){
         Entry* entry = (entries + index);
@@ -33,7 +33,7 @@ static Entry* find_entry(Entry* entries, size_t cap, ObjString* key){
             }
         } else if (entry->key == key || entry->key == NULL)
             return entry;
-        index = (index+1) % cap;
+        index = (index+1) & (cap-1);
     }
 }
 
@@ -127,7 +127,7 @@ void table_remove_white_marked_obj(Table* table){
 
 ObjString* table_find_string(Table* table, const char* chars, size_t length, uint32_t hash){
     if (table->count == 0) return NULL;
-    uint32_t index = hash % table->cap;
+    uint32_t index = hash & (table->cap-1);
     while(1){
         Entry* entry = table->entries + index;
         if (entry->key == NULL){
@@ -138,6 +138,6 @@ ObjString* table_find_string(Table* table, const char* chars, size_t length, uin
         {
             return entry->key;
         }
-        index = (index+1) % table->cap;
+        index = (index+1) & (table->cap-1);
     }
 }

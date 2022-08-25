@@ -111,7 +111,7 @@ void mark_object(Obj* object){
 }
 
 void mark_value(Value value){
-    if (IS_OBJ(value)) mark_object(value.as.obj);
+    if (IS_OBJ(value)) mark_object(AS_OBJ(value));
 }
 
 static void mark_roots(){

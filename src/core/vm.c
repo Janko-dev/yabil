@@ -57,7 +57,7 @@ static NativeResult native_sqrt(int arg_count, Value* args){
         run_time_error("Argument to native 'sqrt()' function expected to be a number value");
         return NATIVE_ERROR();
     }
-    return NATIVE_SUCC(NUM_VAL(sqrt((*args).as.number)));
+    return NATIVE_SUCC(NUM_VAL(sqrt(AS_NUM(*args))));
 }
 
 static void reset_stack(){
@@ -134,7 +134,7 @@ Value peek(int dist){
 }
 
 static bool is_falsey(Value val){
-    return (IS_NIL(val) || (IS_BOOL(val) && !val.as.boolean));
+    return (IS_NIL(val) || (IS_BOOL(val) && !AS_BOOL(val)));
 }
 
 static void concat_string(char* a, size_t size_a, char* b, size_t size_b){
@@ -150,12 +150,22 @@ static void concat_string(char* a, size_t size_a, char* b, size_t size_b){
 }
 
 static void to_string(char* s, size_t size, Value val){
+#ifdef NAN_BOXING
+    if (IS_BOOL(val)){
+        strncpy(s, AS_BOOL(val) ? "true" : "false", size);
+    } else if (IS_NIL(val)){
+        strncpy(s, "(nil)", size);
+    } else if (IS_NUM(val)){
+        snprintf(s, size, "%g", AS_NUM(val));
+    }
+#else
     switch(val.type){
         case VAL_NUM: snprintf(s, size, "%g", val.as.number); break;
         case VAL_BOOL: strncpy(s, val.as.boolean ? "true" : "false", size); break;
         case VAL_NIL:  strncpy(s, "(nil)", size); break;
         default: break;
     }
+#endif
 }
 
 static void define_native(const char* name, NativeFn function, size_t arity){
@@ -370,8 +380,8 @@ static bool invoke(ObjString* name, size_t arg_count){
             run_time_error("Operands must be numbers");             \
             return INTERPRET_RUNTIME_ERR;                           \
         }                                                           \
-        double b = pop().as.number;                                 \
-        double a = pop().as.number;                                 \
+        double b = AS_NUM(pop());                                 \
+        double a = AS_NUM(pop());                                 \
         push(NUM_VAL((int)a % (int)b));                             \
     } while (0)                                                     \
 
@@ -381,8 +391,8 @@ static bool invoke(ObjString* name, size_t arg_count){
             run_time_error("Operands must be numbers");             \
             return INTERPRET_RUNTIME_ERR;                           \
         }                                                           \
-        double b = pop().as.number;                                 \
-        double a = pop().as.number;                                 \
+        double b = AS_NUM(pop());                                 \
+        double a = AS_NUM(pop());                                 \
         push(val_type(a op b));                                     \
     } while (0)                                                     \
 
@@ -455,7 +465,7 @@ static InterpreterResult run(){
                 run_time_error("operand must be a number");
                 return INTERPRET_RUNTIME_ERR;
             }
-            (vm.sp-1)->as.number *= -1; // access top of stack directly and negate its value
+            vm.sp[-1] = NUM_VAL(AS_NUM(vm.sp[-1]) * -1); // access top of stack directly and negate its value
         } NEXT();
         op_not:; {
             *(vm.sp-1) = BOOL_VAL(is_falsey(*(vm.sp-1)));
@@ -466,7 +476,7 @@ static InterpreterResult run(){
             if (IS_NUM(a) && IS_NUM(b)) {
                 pop();
                 pop();
-                push(NUM_VAL(a.as.number + b.as.number));
+                push(NUM_VAL(AS_NUM(a) + AS_NUM(b)));
             } else if (IS_STRING(a) || IS_STRING(b)) concatenate(a, b);
             else if (IS_ARRAY(a) || IS_ARRAY(b)) concatenate(a, b);
             else {
@@ -475,7 +485,7 @@ static InterpreterResult run(){
             }
         } NEXT();
         op_div:;{
-            if (IS_NUM(peek(0)) && peek(0).as.number == 0){
+            if (IS_NUM(peek(0)) && AS_NUM(peek(0)) == 0){
                 run_time_error("Divide by 0 error");
                 return INTERPRET_RUNTIME_ERR;
             }
@@ -599,7 +609,7 @@ static InterpreterResult run(){
         } NEXT();
         op_get_index:;{
             if (IS_NUM(peek(0))) {
-                if (rintf(peek(0).as.number) != peek(0).as.number){
+                if (rintf(AS_NUM(peek(0))) != AS_NUM(peek(0))){
                     run_time_error("Index must evaluate to integer number");
                     return INTERPRET_RUNTIME_ERR;
                 }
@@ -609,8 +619,8 @@ static InterpreterResult run(){
                 }
                 Value index = pop();
                 Value array = pop();
-                if (IS_ARRAY(array)) push(AS_ARRAY(array)->elements.values[(size_t)index.as.number % AS_ARRAY(array)->elements.count]);
-                else push(OBJ_VAL(copy_string(AS_CSTRING(array) + (int)index.as.number, 1))); 
+                if (IS_ARRAY(array)) push(AS_ARRAY(array)->elements.values[(size_t)AS_NUM(index) % AS_ARRAY(array)->elements.count]);
+                else push(OBJ_VAL(copy_string(AS_CSTRING(array) + (int)AS_NUM(index), 1))); 
             } else if (IS_STRING(peek(0))){
                 if (!IS_INSTANCE(peek(1))){
                     run_time_error("Can only get field of instance");
@@ -632,7 +642,7 @@ static InterpreterResult run(){
         } NEXT();
         op_set_index:;{
             if (IS_NUM(peek(1))) {
-                if (rintf(peek(1).as.number) != peek(1).as.number){
+                if (rintf(AS_NUM(peek(1))) != AS_NUM(peek(1))){
                     run_time_error("Index must evaluate to integer number");
                     return INTERPRET_RUNTIME_ERR;
                 }
@@ -643,9 +653,9 @@ static InterpreterResult run(){
                 Value new_val = pop();
                 Value index = pop();
                 if (IS_ARRAY(peek(0))){
-                    AS_ARRAY(peek(0))->elements.values[(size_t)index.as.number % AS_ARRAY(peek(0))->elements.count] = new_val;
+                    AS_ARRAY(peek(0))->elements.values[(size_t)AS_NUM(index) % AS_ARRAY(peek(0))->elements.count] = new_val;
                 } else if (IS_STRING(new_val) && AS_STRING(new_val)->length == 1){
-                    AS_CSTRING(peek(0))[(size_t)index.as.number % AS_STRING(peek(0))->length] = AS_CSTRING(new_val)[0];
+                    AS_CSTRING(peek(0))[(size_t)AS_NUM(index) % AS_STRING(peek(0))->length] = AS_CSTRING(new_val)[0];
                 } else {
                     run_time_error("Can only assign characters to indices of strings");
                     return INTERPRET_RUNTIME_ERR;

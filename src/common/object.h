@@ -86,10 +86,10 @@ typedef struct {
 } ObjBoundMethod;
 
 static inline bool is_obj_type(Value value, ObjType type){
-    return value.type == VAL_OBJ && value.as.obj->type == type;
+    return IS_OBJ(value) && AS_OBJ(value)->type == type;
 }
 
-#define OBJ_TYPE(value) ((value).as.obj->type)
+#define OBJ_TYPE(value) (AS_OBJ(value)->type)
 #define IS_STRING(value) is_obj_type(value, OBJ_STRING)
 #define IS_ARRAY(value) is_obj_type(value, OBJ_ARRAY)
 #define IS_FUNCTION(value) is_obj_type(value, OBJ_FUNCTION)
@@ -99,16 +99,16 @@ static inline bool is_obj_type(Value value, ObjType type){
 #define IS_INSTANCE(value) is_obj_type(value, OBJ_INSTANCE)
 #define IS_BOUND(value) is_obj_type(value, OBJ_BOUND_METHOD)
 
-#define AS_STRING(value) ((ObjString*)(value).as.obj)
-#define AS_CSTRING(value) (((ObjString*)(value).as.obj)->chars)
-#define AS_ARRAY(value) ((ObjArray*)(value).as.obj)
-#define AS_FUNCTION(value) ((ObjFunction*)(value).as.obj)
-#define AS_NATIVE_FN(value) (((ObjNative*)(value).as.obj)->function)
-#define AS_NATIVE(value) ((ObjNative*)(value).as.obj)
-#define AS_CLOSURE(value) ((ObjClosure*)(value).as.obj)
-#define AS_CLASS(value) ((ObjClass*)(value).as.obj)
-#define AS_INSTANCE(value) ((ObjInstance*)(value).as.obj)
-#define AS_BOUND(value) ((ObjBoundMethod*)(value).as.obj)
+#define AS_STRING(value) ((ObjString*)AS_OBJ(value))
+#define AS_CSTRING(value) (((ObjString*)AS_OBJ(value))->chars)
+#define AS_ARRAY(value) ((ObjArray*)AS_OBJ(value))
+#define AS_FUNCTION(value) ((ObjFunction*)AS_OBJ(value))
+#define AS_NATIVE_FN(value) (((ObjNative*)AS_OBJ(value))->function)
+#define AS_NATIVE(value) ((ObjNative*)AS_OBJ(value))
+#define AS_CLOSURE(value) ((ObjClosure*)AS_OBJ(value))
+#define AS_CLASS(value) ((ObjClass*)AS_OBJ(value))
+#define AS_INSTANCE(value) ((ObjInstance*)AS_OBJ(value))
+#define AS_BOUND(value) ((ObjBoundMethod*)AS_OBJ(value))
 
 ObjString* copy_string(const char* chars, size_t length);
 ObjString* take_string(char* chars, size_t length);

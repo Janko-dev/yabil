@@ -26,6 +26,12 @@ void write_value_array(ValueArray* val_array, Value value){
 }
 
 bool values_equal(Value a, Value b){
+#ifdef NAN_BOXING
+    if (IS_NUM(a) && IS_NUM(b)){
+        return AS_NUM(a) == AS_NUM(b);
+    }
+    return a == b;
+#else
     if (a.type != b.type) return false;
     switch (a.type){
         case VAL_BOOL:  return a.as.boolean == b.as.boolean; 
@@ -34,15 +40,28 @@ bool values_equal(Value a, Value b){
         case VAL_OBJ:   return a.as.obj == b.as.obj; 
         default:        return false;
     }
+#endif
 }
 
 void print_value(Value val){
+#ifdef NAN_BOXING
+    if (IS_BOOL(val)){
+        printf(AS_BOOL(val) ? "true" : "false");
+    } else if (IS_NIL(val)){
+        printf("nil");
+    } else if (IS_NUM(val)){
+        printf("%g", AS_NUM(val));
+    } else if (IS_OBJ(val)){
+        print_obj(val);
+    }
+#else
     switch(val.type){
         case VAL_NUM:  printf("%g", val.as.number); break;
         case VAL_NIL:  printf("nil"); break;
         case VAL_BOOL: printf(val.as.boolean ? "true" : "false"); break;
         case VAL_OBJ:  print_obj(val); break;
     }
+#endif
 }
 
 
